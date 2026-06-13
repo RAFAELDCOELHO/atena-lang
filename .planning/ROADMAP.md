@@ -32,7 +32,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A long collected-error list is capped with a trailing "…and N more", and duplicate errors sharing a line and message are collapsed to one.
   4. Given a known symbol set, an unknown-name error appends a "Did you mean …?" suggestion for the closest known name, and error text reads in a first-person, encouraging voice.
   5. The `Token` and AST node data types carry a line number and the offending source-line text, and any uncaught internal error is converted to a plain-English message — a raw Python traceback never reaches the user.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 00-01-PLAN.md — Project skeleton: pyproject.toml, src/atena/ layout, stub modules, pytest config
+- [ ] 00-02-PLAN.md — ErrorCollector core: add/is_empty/report, format template, dedup, sort, cap
+- [ ] 00-03-PLAN.md — Token + AST node data contracts: TokenType enum, Token dataclass, 22 AST node dataclasses
+- [ ] 00-04-PLAN.md — Suggestion engine: suggest() with difflib fuzzy matching and case-only detection
+- [ ] 00-05-PLAN.md — Stub CLI + internal-error fallback: argparse, file-error handling, no-traceback promise
 
 ### Phase 1: Lexer
 **Goal**: Atena source text is tokenized into a correct, balanced token stream that downstream phases can consume, with the off-side-rule edge cases handled exactly.
@@ -111,7 +118,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Diagnostics Spine & Data Contracts | 0/TBD | Not started | - |
+| 0. Diagnostics Spine & Data Contracts | 0/5 | Not started | - |
 | 1. Lexer | 0/TBD | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
