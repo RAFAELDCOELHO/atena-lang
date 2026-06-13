@@ -12,7 +12,7 @@ A complete non-programmer can write real algorithmic logic (functions, control f
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Diagnostics spine & data contracts (DIAG-01..DIAG-06) — *Validated in Phase 0.* Shared `ErrorCollector` with the canonical `Error on line {N}: {msg} → {source}` format, errors collected/sorted/deduped/capped across a run, "Did you mean…?" suggestions, position-bearing `Token`/AST dataclasses, and a stub CLI whose internal-error fallback guarantees no Python traceback ever reaches the learner. (The format and collect-across-run behavior are *established* here and *exercised* by every later phase.)
 
 ### Active
 
@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 after initialization*
+*Last updated: 2026-06-13 — Phase 0 (Diagnostics Spine & Data Contracts) complete.*
