@@ -118,13 +118,54 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _(populated by roadmapper)_ | | |
+| DIAG-01 | Phase 0 | Pending |
+| DIAG-02 | Phase 0 | Pending |
+| DIAG-03 | Phase 0 | Pending |
+| DIAG-04 | Phase 0 | Pending |
+| DIAG-05 | Phase 0 | Pending |
+| DIAG-06 | Phase 0 | Pending |
+| LEX-01 | Phase 1 | Pending |
+| LEX-02 | Phase 1 | Pending |
+| LEX-03 | Phase 1 | Pending |
+| LEX-04 | Phase 1 | Pending |
+| LEX-05 | Phase 1 | Pending |
+| LEX-06 | Phase 1 | Pending |
+| LEX-07 | Phase 1 | Pending |
+| LEX-08 | Phase 1 | Pending |
+| PARSE-01 | Phase 2 | Pending |
+| PARSE-02 | Phase 2 | Pending |
+| PARSE-03 | Phase 2 | Pending |
+| PARSE-04 | Phase 2 | Pending |
+| PARSE-05 | Phase 2 | Pending |
+| PARSE-06 | Phase 2 | Pending |
+| SEM-01 | Phase 3 | Pending |
+| SEM-02 | Phase 3 | Pending |
+| SEM-03 | Phase 3 | Pending |
+| SEM-04 | Phase 3 | Pending |
+| SEM-05 | Phase 3 | Pending |
+| SEM-06 | Phase 3 | Pending |
+| SEM-07 | Phase 3 | Pending |
+| GEN-01 | Phase 4 | Pending |
+| GEN-02 | Phase 4 | Pending |
+| GEN-03 | Phase 4 | Pending |
+| GEN-04 | Phase 4 | Pending |
+| GEN-05 | Phase 4 | Pending |
+| GEN-06 | Phase 4 | Pending |
+| CLI-01 | Phase 5 | Pending |
+| CLI-02 | Phase 5 | Pending |
+| CLI-03 | Phase 5 | Pending |
+| CLI-04 | Phase 5 | Pending |
+| CLI-05 | Phase 5 | Pending |
+| CLI-06 | Phase 5 | Pending |
+| PKG-01 | Phase 6 | Pending |
+| DOCS-01 | Phase 6 | Pending |
+| DOCS-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 42 total
-- Mapped to phases: _(set by roadmapper)_
-- Unmapped: _(set by roadmapper)_
+- Mapped to phases: 42 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-13*
-*Last updated: 2026-06-13 after initial definition*
+*Last updated: 2026-06-13 after roadmap creation (traceability populated)*
