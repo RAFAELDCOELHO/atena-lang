@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "atena-lang"
+version = "0.1.0"
+description = "Atena: a teaching language that transpiles to Python 3"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+atena = "atena.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/atena"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
