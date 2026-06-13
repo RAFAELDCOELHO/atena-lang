@@ -65,7 +65,7 @@ The analyzer owns every semantic decision; the generator emits verbatim.
 - [ ] **CLI-02**: `atena build file.atena` writes/prints the generated Python 3 without executing it
 - [ ] **CLI-03**: `atena run` and `atena build` print collected Atena errors (never Python tracebacks) and exit non-zero when transpilation fails
 - [ ] **CLI-04**: Runtime errors during `atena run` are translated to plain-English Atena messages with the Atena line number (no Python traceback)
-- [ ] **CLI-05**: The CLI handles a missing or unreadable `.atena` file with a friendly plain-English message
+- [x] **CLI-05**: The CLI handles a missing or unreadable `.atena` file with a friendly plain-English message
 - [ ] **CLI-06**: `atena build` (or a `--show` flag) reveals the generated Python so learners can connect Atena constructs to real Python
 
 ### Packaging
@@ -155,7 +155,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CLI-02 | Phase 5 | Pending |
 | CLI-03 | Phase 5 | Pending |
 | CLI-04 | Phase 5 | Pending |
-| CLI-05 | Phase 5 | Pending |
+| CLI-05 | Phase 5 | Complete |
 | CLI-06 | Phase 5 | Pending |
 | PKG-01 | Phase 6 | Pending |
 | DOCS-01 | Phase 6 | Pending |
