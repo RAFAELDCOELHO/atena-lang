@@ -130,9 +130,22 @@ def main() -> None:
     if result is not None:
         if args.command == "build":
             out_path = os.path.splitext(args.file)[0] + ".py"
-            with open(out_path, "w", encoding="utf-8") as fh:
-                fh.write(result)
+            try:
+                with open(out_path, "w", encoding="utf-8") as fh:
+                    fh.write(result)
+            except OSError as exc:
+                print(_file_error_message(out_path, exc), file=sys.stderr)
+                sys.exit(1)
             print(f'Built "{os.path.basename(out_path)}".')
         else:
-            # run: exec the generated Python
-            exec(compile(result, args.file, "exec"), {})  # noqa: S102
+            # run: exec the generated Python — wrap so no traceback reaches the learner
+            try:
+                code = compile(result, args.file, "exec")
+                exec(code, {})  # noqa: S102
+            except SystemExit:
+                raise
+            except BaseException as exc:  # learner program runtime error
+                # Surface as a plain-English message (Phase 5 will refine this);
+                # never let a Python traceback escape.
+                print(_internal_error_message(exc), file=sys.stderr)
+                sys.exit(1)
