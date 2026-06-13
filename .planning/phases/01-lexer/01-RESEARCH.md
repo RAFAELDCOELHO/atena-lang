@@ -611,22 +611,25 @@ if ch.isalpha() or ch == '_':
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Decimal off-ramp: emit integer token or no token?**
    - What we know: D-04 says recover-and-continue; D-02 says report the error; per-off-ramp recovery mechanics are Claude's Discretion.
    - What's unclear: Should the lexer emit `NUMBER("3")` for the integer part of `3.5`, so the parser can continue? Or emit nothing, to avoid partial-data confusion?
    - Recommendation: Emit the integer token. This gives the parser something to consume and allows further errors to be found downstream. The error message is collected regardless.
+   - **RESOLVED:** Emit the integer token. Implemented in Plan 01-02 (`3.5` → collect decimal off-ramp error + emit `NUMBER("3")`, then recover past the fraction).
 
 2. **Uniform-step: should a ragged dedent (width not a clean multiple of unit) produce an additional error beyond the standard unmatched-dedent error?**
    - What we know: D-07 says "ragged width" is an error; Pitfall 1 says unmatched dedent is an error. Both could fire on the same line.
    - What's unclear: Does reporting both confuse the learner? Or does the specific "ragged width" message provide more useful guidance than "doesn't match any block"?
    - Recommendation: Report only the unmatched-dedent error when both conditions hold, since it is the more precise structural description. The uniform-step error fires only when the indent stack *did* match (valid dedent level) but the width arithmetic was ragged.
+   - **RESOLVED:** Report only the unmatched-dedent error when both conditions hold. Implemented in Plan 01-03 `_handle_indentation`.
 
 3. **EOF with no trailing newline and no content on last line (empty file or file ending with blank line):**
    - What we know: Pitfall 2 says emit a NEWLINE if the last logical line had no trailing `\n`.
    - What's unclear: An empty file or a file that ends in a blank line should produce only `[EOF]` with no NEWLINE. Need to track whether any logical line content was ever emitted.
    - Recommendation: Track a `_last_had_content: bool` flag; only emit the trailing NEWLINE when this flag is True and the last emitted token was not a NEWLINE.
+   - **RESOLVED:** Track last-content state; only emit the trailing NEWLINE when the last emitted token was not already a NEWLINE (empty file / trailing-blank-line → `[EOF]` only). Implemented in Plan 01-03 `_drain_at_eof()`.
 
 ---
 
