@@ -166,10 +166,10 @@ def test_c7_internal_error_no_line(
     import io
 
     captured_stderr = io.StringIO()
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
     with pytest.raises(SystemExit) as exc_info:
         with patch("sys.stderr", captured_stderr):
             _cli.main.__module__  # touch module
-            sys.argv = ["atena", "run", existing_atena_file]
             _cli.main()
 
     assert exc_info.value.code == 1, (
@@ -210,9 +210,9 @@ def test_c8_internal_error_with_line(
     import io
 
     captured_stderr = io.StringIO()
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
     with pytest.raises(SystemExit) as exc_info:
         with patch("sys.stderr", captured_stderr):
-            sys.argv = ["atena", "run", existing_atena_file]
             _cli.main()
 
     assert exc_info.value.code == 1, (
