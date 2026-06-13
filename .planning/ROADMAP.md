@@ -69,7 +69,20 @@ Plans:
   4. Every token is stamped with its line number and source-line text; `=` and `==` are distinguished by maximal munch; all operators, comparisons, and the full keyword set (show, ask, if, else, while, repeat, times, and, or, not, function, return, add, to, remove, from, length, true, false) are recognized.
   5. An unterminated double-quoted string or an unexpected character produces a plain-English error, never a Python exception.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 0** *(TDD RED — must run first)*
+
+- [ ] 01-01-PLAN.md — TDD RED: all 28 test_lexer.py stubs + Lexer stub (imports succeed, all tests fail)
+
+**Wave 1** *(blocked on Wave 0 completion)*
+
+- [ ] 01-02-PLAN.md — Core character scanner: identifiers/keywords, strings, numbers, operators, maximal-munch = vs ==, off-ramps for decimal/single-quote/colon/semicolon (LEX-01/05/06/07/08 GREEN)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 01-03-PLAN.md — Indentation engine: INDENT/DEDENT/NEWLINE, blank/comment skip, uniform-step validation, EOF drain (LEX-02/03/04 GREEN — all 28 tests GREEN)
 
 ### Phase 2: Parser
 
@@ -152,7 +165,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
-| 1. Lexer | 0/TBD | Not started | - |
+| 1. Lexer | 0/3 | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
