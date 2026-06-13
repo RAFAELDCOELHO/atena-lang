@@ -51,11 +51,16 @@ def test_T4_keywords_show_and_function():
     assert KEYWORDS["function"] == TokenType.KEYWORD
 
 
-def test_T5_keywords_has_18_entries():
-    """KEYWORDS dict has exactly 18 Atena keyword entries."""
+def test_T5_keywords_has_19_entries():
+    """KEYWORDS dict has exactly 19 Atena keyword entries (LEX-06)."""
     from atena.tokens import KEYWORDS
 
-    assert len(KEYWORDS) == 18
+    # LEX-06 lists 19 keywords:
+    # show ask if else while repeat times and or not
+    # function return add to remove from length true false
+    # The plan's <behavior> section mistakenly said 18; LEX-06 is the
+    # authoritative source and lists 19 keywords. [Rule 1 auto-fix]
+    assert len(KEYWORDS) == 19
 
 
 def test_T6_user_identifiers_not_in_keywords():
