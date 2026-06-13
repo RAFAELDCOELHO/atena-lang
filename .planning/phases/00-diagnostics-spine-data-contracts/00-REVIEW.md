@@ -23,7 +23,14 @@ findings:
   warning: 6
   info: 5
   total: 12
-status: issues_found
+status: resolved
+resolution:
+  resolved_at: 2026-06-13
+  fixed: "CR-01, WR-01, WR-02, WR-03, WR-04, WR-05, WR-06 (1 Critical + 6 Warning)"
+  fix_commits: "0b4dd3c, 7bd054b, fcec22e, 5e04098, b4cf3d5, a738609"
+  tests_after: 58
+  deferred: "IN-01..IN-05 (Info-only; not blocking)"
+  note: "Traceback-escape findings verified fixed — binary file and directory-as-file now print plain-English messages, 0 tracebacks leak."
 ---
 
 # Phase 0: Code Review Report
