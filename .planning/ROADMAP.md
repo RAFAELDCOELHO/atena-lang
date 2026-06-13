@@ -14,7 +14,7 @@ Atena is a teaching transpiler (Atena → Python 3) built as a single-pass pipel
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 0: Diagnostics Spine & Data Contracts** - Shared ErrorCollector, exact error format, position-bearing Token/AST contracts, stub CLI (completed 2026-06-13)
-- [ ] **Phase 1: Lexer** - Source → balanced token stream with INDENT/DEDENT, blank/comment skipping, tab-space policy
+- [x] **Phase 1: Lexer** - Source → balanced token stream with INDENT/DEDENT, blank/comment skipping, tab-space policy (completed 2026-06-13)
 - [ ] **Phase 2: Parser** - Token stream → AST honoring the precedence ladder, with syntax-error recovery
 - [ ] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision
 - [ ] **Phase 4: Code Generator** - Analyzed AST → valid, runnable Python 3, emitted verbatim, with `ast.parse()` self-check
@@ -82,7 +82,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-03-PLAN.md — Indentation engine: INDENT/DEDENT/NEWLINE, blank/comment skip, uniform-step validation, EOF drain (LEX-02/03/04 GREEN — all 28 tests GREEN)
+- [x] 01-03-PLAN.md — Indentation engine: INDENT/DEDENT/NEWLINE, blank/comment skip, uniform-step validation, EOF drain (LEX-02/03/04 GREEN — all 28 tests GREEN)
 
 ### Phase 2: Parser
 
@@ -165,7 +165,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
-| 1. Lexer | 2/3 | In Progress|  |
+| 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
