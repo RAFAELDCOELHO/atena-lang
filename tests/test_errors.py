@@ -275,3 +275,37 @@ def test_s11_case_only_check_case_insensitive() -> None:
     """S-11: SHOW (all caps) vs 'show' in keywords triggers the D-06 message."""
     result = suggest("SHOW", list(ATENA_KEYWORDS))
     assert result == 'Did you mean "show"? Names must match capitalization exactly.'
+
+
+# ---------------------------------------------------------------------------
+# Test S-12 — WR-03: duplicate-candidate contract pinned
+# ---------------------------------------------------------------------------
+
+def test_s12_duplicate_candidate_exact_match_returns_none() -> None:
+    """S-12: suggest("x", ["x", "X", "xx"]) returns None — exact same-case match wins.
+
+    Pins the contract: candidates may contain duplicates; the first exact
+    same-case match short-circuits and returns None (no suggestion needed).
+    "X" (different case) and "xx" (typo) do not override the exact hit.
+    """
+    result = suggest("x", ["x", "X", "xx"])
+    assert result is None, (
+        f'Expected None for exact match "x" in candidates, got: {result!r}'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test S-13 — WR-02: fuzzy match beats misleading case-only match
+# ---------------------------------------------------------------------------
+
+def test_s13_fuzzy_beats_case_only_mismatch() -> None:
+    """S-13: suggest("scor", ["score", "SCOR"]) returns the same-case fuzzy match.
+
+    "SCOR" is an exact case-insensitive hit, but "score" is a better same-case
+    fuzzy match. The fixed algorithm runs fuzzy first and should return "score"
+    with the plain 'Did you mean' form (not a misleading capitalisation note).
+    """
+    result = suggest("scor", ["score", "SCOR"])
+    assert result == 'Did you mean "score"?', (
+        f'Expected plain fuzzy suggestion for "score", got: {result!r}'
+    )
