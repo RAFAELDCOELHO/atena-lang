@@ -104,11 +104,23 @@ def suggest(name: str, candidates: list[str]) -> str | None:
 
     Algorithm:
     1. Return None immediately if candidates is empty.
-    2. Return None if name is already an exact match in candidates.
-    3. Case-only check first (D-06): if any candidate matches case-insensitively,
-       return the D-06 form with capitalization note.
-    4. Fuzzy check via difflib.get_close_matches (cutoff=0.6, n=1).
-    5. Return None if no match found.
+    2. Return None if name is already an exact match in candidates (case-sensitive).
+       Precondition: candidates may contain duplicates; the first exact same-case
+       match wins. Callers build candidates as list(ATENA_KEYWORDS) + variables.
+    3. Fuzzy check via difflib.get_close_matches (cutoff=0.6, n=1).
+    4. If the best fuzzy match differs from *name* only by case (i.e. the same
+       word spelled identically but with different capitalisation), emit the D-06
+       form with a capitalization note — the learner's error is casing, not a typo.
+    5. If the best fuzzy match differs in more than just case, emit the plain
+       "Did you mean" form.
+    6. If no fuzzy match meets the cutoff, fall back to a case-insensitive scan
+       of candidates. A case-only match that fuzzy-matching missed (e.g. a very
+       long word that scored too low) still deserves the D-06 form.
+    7. Return None if no match found.
+
+    Running fuzzy first ensures that when both a same-case near-match and a
+    different-case exact-ish match exist, the better same-case fuzzy candidate
+    wins (e.g. suggest("scor", ["score", "SCOR"]) correctly returns "score").
 
     The candidate set is caller-supplied — this function accepts any arbitrary
     list of names (variables, keywords, or any mix). Candidate set size is
@@ -120,15 +132,21 @@ def suggest(name: str, candidates: list[str]) -> str | None:
     if name in candidates:
         return None
 
-    # Case-only check: find the first candidate whose lowercase matches.
+    # Fuzzy check first: up to 1 match, at least 60% similarity.
+    matches = difflib.get_close_matches(name, candidates, n=1, cutoff=0.6)
+    if matches:
+        best = matches[0]
+        # If the best fuzzy match differs from name only by case, it is a
+        # capitalisation error — emit the D-06 form with the capitalization note.
+        if name.lower() == best.lower():
+            return f'Did you mean "{best}"? Names must match capitalization exactly.'
+        return f'Did you mean "{best}"?'
+
+    # Fallback: a pure case-only mismatch that fell below the fuzzy cutoff
+    # (e.g. very long word that scored too low). Still deserves the D-06 form.
     name_lower = name.lower()
     for candidate in candidates:
         if name_lower == candidate.lower():
             return f'Did you mean "{candidate}"? Names must match capitalization exactly.'
-
-    # Fuzzy check: up to 1 match, at least 60% similarity.
-    matches = difflib.get_close_matches(name, candidates, n=1, cutoff=0.6)
-    if matches:
-        return f'Did you mean "{matches[0]}"?'
 
     return None
