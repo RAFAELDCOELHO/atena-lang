@@ -74,7 +74,7 @@ Plans:
 Plans:
 **Wave 0** *(TDD RED — must run first)*
 
-- [ ] 01-01-PLAN.md — TDD RED: all 28 test_lexer.py stubs + Lexer stub (imports succeed, all tests fail)
+- [x] 01-01-PLAN.md — TDD RED: all 28 test_lexer.py stubs + Lexer stub (imports succeed, all tests fail)
 
 **Wave 1** *(blocked on Wave 0 completion)*
 
@@ -165,7 +165,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
-| 1. Lexer | 0/3 | Not started | - |
+| 1. Lexer | 1/3 | In Progress|  |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |

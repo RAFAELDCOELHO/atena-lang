@@ -20,14 +20,14 @@ The cross-cutting spine. Established before the lexer; every phase plugs into it
 
 ### Lexer
 
-- [ ] **LEX-01**: Lexer tokenizes source into the defined token types (STRING, NUMBER, IDENTIFIER, OPERATOR, COMPARISON, ASSIGN, LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE, COMMA, DOT, NEWLINE, INDENT, DEDENT, EOF)
-- [ ] **LEX-02**: Lexer emits INDENT/DEDENT tokens by tracking indentation level, and drains all open blocks at end of file
-- [ ] **LEX-03**: Lexer skips blank lines and comment-only lines, emitting no NEWLINE for them
-- [ ] **LEX-04**: Lexer enforces consistent tabs OR spaces within a file and reports a plain-English error on mixed indentation
-- [ ] **LEX-05**: Lexer distinguishes ASSIGN (`=`) from COMPARISON (`==`) and recognizes all comparison (`!=`, `>`, `<`, `>=`, `<=`) and arithmetic (`+ - * /`) operators
-- [ ] **LEX-06**: Lexer recognizes all keywords: show, ask, if, else, while, repeat, times, and, or, not, function, return, add, to, remove, from, length, true, false
-- [ ] **LEX-07**: Lexer reads double-quoted string literals and integer numbers only, stamping every token with its line number and source-line text
-- [ ] **LEX-08**: Lexer reports a plain-English error for an unterminated string or an unexpected character
+- [x] **LEX-01**: Lexer tokenizes source into the defined token types (STRING, NUMBER, IDENTIFIER, OPERATOR, COMPARISON, ASSIGN, LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE, COMMA, DOT, NEWLINE, INDENT, DEDENT, EOF)
+- [x] **LEX-02**: Lexer emits INDENT/DEDENT tokens by tracking indentation level, and drains all open blocks at end of file
+- [x] **LEX-03**: Lexer skips blank lines and comment-only lines, emitting no NEWLINE for them
+- [x] **LEX-04**: Lexer enforces consistent tabs OR spaces within a file and reports a plain-English error on mixed indentation
+- [x] **LEX-05**: Lexer distinguishes ASSIGN (`=`) from COMPARISON (`==`) and recognizes all comparison (`!=`, `>`, `<`, `>=`, `<=`) and arithmetic (`+ - * /`) operators
+- [x] **LEX-06**: Lexer recognizes all keywords: show, ask, if, else, while, repeat, times, and, or, not, function, return, add, to, remove, from, length, true, false
+- [x] **LEX-07**: Lexer reads double-quoted string literals and integer numbers only, stamping every token with its line number and source-line text
+- [x] **LEX-08**: Lexer reports a plain-English error for an unterminated string or an unexpected character
 
 ### Parser
 
@@ -124,14 +124,14 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DIAG-04 | Phase 0 | Complete |
 | DIAG-05 | Phase 0 | Complete |
 | DIAG-06 | Phase 0 | Complete |
-| LEX-01 | Phase 1 | Pending |
-| LEX-02 | Phase 1 | Pending |
-| LEX-03 | Phase 1 | Pending |
-| LEX-04 | Phase 1 | Pending |
-| LEX-05 | Phase 1 | Pending |
-| LEX-06 | Phase 1 | Pending |
-| LEX-07 | Phase 1 | Pending |
-| LEX-08 | Phase 1 | Pending |
+| LEX-01 | Phase 1 | Complete |
+| LEX-02 | Phase 1 | Complete |
+| LEX-03 | Phase 1 | Complete |
+| LEX-04 | Phase 1 | Complete |
+| LEX-05 | Phase 1 | Complete |
+| LEX-06 | Phase 1 | Complete |
+| LEX-07 | Phase 1 | Complete |
+| LEX-08 | Phase 1 | Complete |
 | PARSE-01 | Phase 2 | Pending |
 | PARSE-02 | Phase 2 | Pending |
 | PARSE-03 | Phase 2 | Pending |
