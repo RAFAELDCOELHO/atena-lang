@@ -51,17 +51,23 @@ def _read_file(path: str) -> str:
     """Read and return the contents of the file at *path*.
 
     Raises FileNotFoundError if the file does not exist.
-    Raises PermissionError if the file cannot be read.
+    Raises IsADirectoryError if *path* is a directory, not a file.
+    Raises UnicodeDecodeError if the file is not valid UTF-8 text.
+    Raises PermissionError if the file cannot be read for any other reason.
     """
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
     except FileNotFoundError:
         raise
+    except IsADirectoryError:
+        raise
     except PermissionError:
         raise
+    except UnicodeDecodeError:
+        raise
     except OSError as exc:
-        # Treat other OS-level read failures as unreadable (e.g. IsADirectoryError)
+        # Treat other OS-level read failures as generic unreadable
         raise PermissionError(str(exc)) from exc
 
 
@@ -73,7 +79,14 @@ def _file_error_message(path: str, exc: Exception) -> str:
     filename = os.path.basename(path)
     if isinstance(exc, FileNotFoundError):
         return f'I couldn\'t find a file called "{filename}".'
-    return f'I couldn\'t read "{filename}" — make sure the file isn\'t locked.'
+    if isinstance(exc, IsADirectoryError):
+        return f'"{filename}" is a folder, not a file.'
+    if isinstance(exc, UnicodeDecodeError):
+        return (
+            f'I couldn\'t read "{filename}"'
+            " — it doesn't look like a text file."
+        )
+    return f'I couldn\'t read "{filename}".'
 
 
 def _internal_error_message(exc: BaseException) -> str:
@@ -110,7 +123,7 @@ def main() -> None:
     # --- File read (plain-English error on failure) --------------------------
     try:
         source = _read_file(args.file)
-    except (FileNotFoundError, PermissionError) as exc:
+    except (FileNotFoundError, IsADirectoryError, PermissionError, UnicodeDecodeError) as exc:
         print(_file_error_message(args.file, exc), file=sys.stderr)
         sys.exit(1)
 
