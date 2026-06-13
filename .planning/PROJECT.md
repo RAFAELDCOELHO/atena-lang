@@ -13,10 +13,10 @@ A complete non-programmer can write real algorithmic logic (functions, control f
 ### Validated
 
 - [x] Diagnostics spine & data contracts (DIAG-01..DIAG-06) — *Validated in Phase 0.* Shared `ErrorCollector` with the canonical `Error on line {N}: {msg} → {source}` format, errors collected/sorted/deduped/capped across a run, "Did you mean…?" suggestions, position-bearing `Token`/AST dataclasses, and a stub CLI whose internal-error fallback guarantees no Python traceback ever reaches the learner. (The format and collect-across-run behavior are *established* here and *exercised* by every later phase.)
+- [x] Lexer (LEX-01..LEX-08) — *Validated in Phase 1.* Single-pass character scanner + off-side-rule indentation engine producing a balanced INDENT/DEDENT/NEWLINE token stream drained at EOF; blank/comment-line skipping with zero stack side-effects; uniform-step validation with plain-English errors (mixed tabs/spaces, staircase-dedent, over-indent, ragged-width); maximal-munch `=`/`==`, all operators/comparisons, the 19-keyword set, double-quoted strings, integers; teaching off-ramps (decimal, single-quote, colon, semicolon) and unterminated-string/unexpected-char errors — all routed through `ErrorCollector`, never a Python exception. 29 lexer tests green, 87/87 total.
 
 ### Active
 
-- [ ] Lexer tokenizes Atena source into a token stream with INDENT/DEDENT emission, skipping blank and comment-only lines
 - [ ] Parser builds a complete AST from the token stream honoring the defined operator precedence
 - [ ] Semantic analyzer injects type coercion (`str()` wrapping), converts 1-indexed access to 0-indexed, and detects undefined variables and function arity errors
 - [ ] Code generator emits valid, runnable Python 3 from the analyzed AST
@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 — Phase 0 (Diagnostics Spine & Data Contracts) complete.*
+*Last updated: 2026-06-13 — Phase 1 (Lexer) complete.*
