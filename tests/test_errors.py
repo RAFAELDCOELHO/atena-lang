@@ -12,7 +12,7 @@ import re
 
 import pytest
 
-from atena.errors import ErrorCollector
+from atena.errors import ErrorCollector, suggest, ATENA_KEYWORDS
 
 
 # ---------------------------------------------------------------------------
@@ -198,3 +198,74 @@ def test_no_jargon_in_errors_py() -> None:
         assert word not in string_literals, (
             f"Forbidden jargon word '{word}' found in a string literal in errors.py"
         )
+
+
+# ---------------------------------------------------------------------------
+# Tests S-1 through S-11 — suggest() and ATENA_KEYWORDS (Plan 00-04)
+# ---------------------------------------------------------------------------
+
+def test_s1_typo_caught() -> None:
+    """S-1: A close typo returns 'Did you mean "score"?'."""
+    result = suggest("scr", ["score", "show", "ask"])
+    assert result == 'Did you mean "score"?'
+
+
+def test_s2_keyword_typo_caught() -> None:
+    """S-2: A keyword typo returns 'Did you mean "show"?'."""
+    result = suggest("shwo", list(ATENA_KEYWORDS))
+    assert result == 'Did you mean "show"?'
+
+
+def test_s3_wild_miss_silenced() -> None:
+    """S-3: A wild miss with no close candidate returns None."""
+    result = suggest("banana", ["score", "show", "ask"])
+    assert result is None
+
+
+def test_s4_case_only_mismatch() -> None:
+    """S-4: Case-only mismatch returns the D-06 form with capitalization note."""
+    result = suggest("Score", ["score", "show", "ask"])
+    assert result == 'Did you mean "score"? Names must match capitalization exactly.'
+
+
+def test_s5_case_only_takes_priority() -> None:
+    """S-5: Case-only mismatch takes priority over fuzzy matching."""
+    result = suggest("Score", ["score"])
+    assert result == 'Did you mean "score"? Names must match capitalization exactly.'
+
+
+def test_s6_single_best_result() -> None:
+    """S-6: Only ONE suggestion returned even when multiple candidates are close."""
+    result = suggest("scre", ["score", "screech"])
+    assert result == 'Did you mean "score"?'
+
+
+def test_s7_deterministic_tie_breaking() -> None:
+    """S-7: Repeated calls return the same result — no randomness."""
+    results = {suggest("ab", ["ac", "ad"]) for _ in range(10)}
+    assert len(results) == 1, "suggest() must be deterministic across calls"
+
+
+def test_s8_empty_candidate_list() -> None:
+    """S-8: Empty candidate list returns None without crashing."""
+    result = suggest("xyz", [])
+    assert result is None
+
+
+def test_s9_exact_match_not_suggested() -> None:
+    """S-9: Exact match in candidates returns None — no suggestion needed."""
+    result = suggest("score", ["score"])
+    assert result is None
+
+
+def test_s10_atena_keywords_count_and_membership() -> None:
+    """S-10: ATENA_KEYWORDS has exactly 18 entries including 'show' and 'function'."""
+    assert len(ATENA_KEYWORDS) == 18
+    assert "show" in ATENA_KEYWORDS
+    assert "function" in ATENA_KEYWORDS
+
+
+def test_s11_case_only_check_case_insensitive() -> None:
+    """S-11: SHOW (all caps) vs 'show' in keywords triggers the D-06 message."""
+    result = suggest("SHOW", list(ATENA_KEYWORDS))
+    assert result == 'Did you mean "show"? Names must match capitalization exactly.'

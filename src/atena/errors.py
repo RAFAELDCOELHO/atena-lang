@@ -84,6 +84,9 @@ class ErrorCollector:
         return result
 
 
+ATENA_KEYWORDS: list[str] = []  # TODO: populated in Plan 04
+
+
 def suggest(name: str, candidates: list[str]) -> str | None:
     """Return the single closest candidate name, or None if no close match.
 
