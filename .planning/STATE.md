@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
+stopped_at: Phase 0 context gathered
+last_updated: "2026-06-13T20:17:15.302Z"
+last_activity: 2026-06-13 — Roadmap created (7 phases, 0–6); all 42 v1 requirements mapped
+progress:
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -19,6 +35,7 @@ Progress: [░░░░░░░░░░] 0%
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: — min
 - Total execution time: 0.0 hours
@@ -30,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: —
 - Trend: —
 
@@ -58,6 +76,7 @@ None yet.
 [Issues that affect future work]
 
 Two decisions deferred to phase planning (not blockers, but resolve before the phase is "done"):
+
 - Phase 3: the exact dynamic-vs-literal index boundary for the `_atena_index` runtime helper, and the UNKNOWN-typed-operand coercion policy (under-coerce rather than over-reject).
 - Phase 4/5: codegen strategy `ast.unparse()` (A) vs string emission (B), and the runtime-error-to-Atena-line mapping for `atena run` (`exec` vs subprocess, line markers).
 
@@ -71,6 +90,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-13
-Stopped at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability populated
-Resume file: None
+Last session: 2026-06-13T20:17:15.294Z
+Stopped at: Phase 0 context gathered
+Resume file: .planning/phases/00-diagnostics-spine-data-contracts/00-CONTEXT.md
