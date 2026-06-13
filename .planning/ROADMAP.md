@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 00-01-PLAN.md — Project skeleton: pyproject.toml, src/atena/ layout, stub modules, pytest config
+- [x] 00-01-PLAN.md — Project skeleton: pyproject.toml, src/atena/ layout, stub modules, pytest config
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -151,7 +151,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Diagnostics Spine & Data Contracts | 0/5 | Not started | - |
+| 0. Diagnostics Spine & Data Contracts | 1/5 | In Progress|  |
 | 1. Lexer | 0/TBD | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |

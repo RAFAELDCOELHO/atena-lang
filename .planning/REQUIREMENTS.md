@@ -11,9 +11,9 @@ Requirements for the initial release. Each maps to roadmap phases.
 
 The cross-cutting spine. Established before the lexer; every phase plugs into it.
 
-- [ ] **DIAG-01**: Every error follows the exact format `Error on line {N}: {plain English description}` followed by `→ {offending source line}`
-- [ ] **DIAG-02**: The transpiler collects all errors in a single run and reports them ordered by line number (error recovery), instead of stopping at the first error
-- [ ] **DIAG-03**: No Python stack trace or compiler jargon (e.g. "token", "AST", "DEDENT", "arity", "NoneType") ever reaches the user, at compile time or runtime
+- [x] **DIAG-01**: Every error follows the exact format `Error on line {N}: {plain English description}` followed by `→ {offending source line}`
+- [x] **DIAG-02**: The transpiler collects all errors in a single run and reports them ordered by line number (error recovery), instead of stopping at the first error
+- [x] **DIAG-03**: No Python stack trace or compiler jargon (e.g. "token", "AST", "DEDENT", "arity", "NoneType") ever reaches the user, at compile time or runtime
 - [ ] **DIAG-04**: Error messages are written in a first-person, encouraging voice
 - [ ] **DIAG-05**: When a name is unknown, the error suggests the closest known variable or keyword ("Did you mean …?")
 - [ ] **DIAG-06**: Cascading duplicate errors from a single root cause are suppressed, and a long error list is capped with "…and N more"
@@ -118,9 +118,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DIAG-01 | Phase 0 | Pending |
-| DIAG-02 | Phase 0 | Pending |
-| DIAG-03 | Phase 0 | Pending |
+| DIAG-01 | Phase 0 | Complete |
+| DIAG-02 | Phase 0 | Complete |
+| DIAG-03 | Phase 0 | Complete |
 | DIAG-04 | Phase 0 | Pending |
 | DIAG-05 | Phase 0 | Pending |
 | DIAG-06 | Phase 0 | Pending |
