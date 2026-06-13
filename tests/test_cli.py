@@ -276,3 +276,138 @@ def test_c10_unreadable_file(tmp_path: Path) -> None:
     finally:
         # Restore permissions so tmp_path cleanup can delete the file
         f.chmod(stat.S_IRUSR | stat.S_IWUSR)
+
+
+# ---------------------------------------------------------------------------
+# C-11 — directory-as-file → "is a folder" message, exit 1, no traceback (WR-04)
+# ---------------------------------------------------------------------------
+
+def test_c11_directory_as_file_plain_english_error(tmp_path: Path) -> None:
+    """C-11: 'atena run <directory>' → folder-not-a-file message, exit 1, no traceback."""
+    result = run_cli("run", str(tmp_path))
+    assert result.returncode == 1, (
+        f"Expected exit 1, got {result.returncode}"
+    )
+    combined = result.stdout + result.stderr
+    assert "is a folder" in combined, (
+        f"Expected folder-not-a-file message. Got: {combined!r}"
+    )
+    assert "Traceback" not in combined, (
+        f"Python traceback must not appear: {combined!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-12 — non-UTF-8 file → "doesn't look like a text file" message, exit 1, no traceback (WR-05)
+# ---------------------------------------------------------------------------
+
+def test_c12_non_utf8_file_plain_english_error(tmp_path: Path) -> None:
+    """C-12: Binary file → 'doesn't look like a text file' message, exit 1, no traceback."""
+    f = tmp_path / "binary.atena"
+    # Write raw bytes that are not valid UTF-8 (Latin-1 encoded text with 0x80-0xFF)
+    f.write_bytes(b"\xff\xfe\x00\x01non-utf8 content")
+
+    result = run_cli("run", str(f))
+    assert result.returncode == 1, (
+        f"Expected exit 1, got {result.returncode}"
+    )
+    combined = result.stdout + result.stderr
+    assert "doesn't look like a text file" in combined, (
+        f"Expected non-UTF-8 message. Got: {combined!r}"
+    )
+    assert "Traceback" not in combined, (
+        f"Python traceback must not appear: {combined!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-13 — build to read-only directory → plain-English write error, exit 1, no traceback (WR-01)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Unix file permissions not applicable on Windows",
+)
+@pytest.mark.skipif(
+    os.getuid() == 0,  # type: ignore[attr-defined]
+    reason="Root user can write anywhere; permission test is meaningless as root",
+)
+def test_c13_build_unwritable_output_plain_english_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-13: 'atena build' with unwritable output dir → plain-English error, exit 1, no traceback."""
+    import atena.cli as _cli
+    import io
+
+    # Put the source file inside a read-only sub-directory so the .py output
+    # would also land inside it (same dir, same stem).
+    src_dir = tmp_path / "readonly"
+    src_dir.mkdir()
+    f = src_dir / "prog.atena"
+    f.write_text("show 1\n")
+    # Make the directory read-only (no write permission) AFTER writing the source file
+    src_dir.chmod(0o555)
+
+    # Simulate transpile returning generated Python so the build-write path is reached
+    def _transpile_ok(source: str, filename: str) -> str | None:
+        return "x = 1\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_ok)
+    monkeypatch.setattr(sys, "argv", ["atena", "build", str(f)])
+
+    captured_stderr = io.StringIO()
+    try:
+        with pytest.raises(SystemExit) as exc_info:
+            with patch("sys.stderr", captured_stderr):
+                _cli.main()
+
+        assert exc_info.value.code == 1, (
+            f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+        )
+        err_output = captured_stderr.getvalue()
+        assert "I couldn't" in err_output, (
+            f"Expected a plain-English I-couldn't message. Got: {err_output!r}"
+        )
+        assert "Traceback" not in err_output, (
+            f"Python traceback must not appear: {err_output!r}"
+        )
+    finally:
+        src_dir.chmod(0o755)
+
+
+# ---------------------------------------------------------------------------
+# C-14 — exec runtime error → plain-English message, exit 1, no traceback (CR-01)
+# ---------------------------------------------------------------------------
+
+def test_c14_exec_runtime_error_no_traceback(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-14: Division-by-zero in exec'd code → plain-English message, no traceback."""
+    import atena.cli as _cli
+    import io
+
+    # Simulate transpile returning code that raises ZeroDivisionError at runtime
+    def _transpile_boom(source: str, filename: str) -> str | None:
+        return "x = 1 / 0\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_boom)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Something went wrong inside Atena" in err_output, (
+        f"Expected internal-error message. Got: {err_output!r}"
+    )
+    assert "Traceback" not in err_output, (
+        f"Python traceback must not appear: {err_output!r}"
+    )
+    assert "ZeroDivisionError" not in err_output, (
+        f"Raw exception class name must not appear: {err_output!r}"
+    )
