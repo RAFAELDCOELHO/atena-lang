@@ -50,7 +50,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 00-04-PLAN.md — Suggestion engine: suggest() with difflib fuzzy matching and case-only detection
+- [x] 00-04-PLAN.md — Suggestion engine: suggest() with difflib fuzzy matching and case-only detection
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -151,7 +151,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Diagnostics Spine & Data Contracts | 3/5 | In Progress|  |
+| 0. Diagnostics Spine & Data Contracts | 4/5 | In Progress|  |
 | 1. Lexer | 0/TBD | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |

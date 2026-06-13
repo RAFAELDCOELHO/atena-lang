@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 00-02-PLAN.md — ErrorCollector implementation
-last_updated: "2026-06-13T21:00:19.786Z"
+stopped_at: Completed 00-04-PLAN.md — suggest() implementation
+last_updated: "2026-06-13T21:05:44.055Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 00 (diagnostics-spine-data-contracts) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-06-13
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██████░░░░] 60%
 |-------|-------|-------|----------|
 | 00 P02 | 5 min | 3 tasks, 2 files | — |
 | Phase 00 P03 | 8 | 2 tasks | 4 files |
+| Phase 00 P04 | 10 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [00-02]: Dedup key is (line, message) only — source_line is display-only, not part of error identity; two calls on same line/message always collapse.
 - [00-02]: Dedup happens at report() time, not add() time — keeps add() O(1); phases never need to guard against double-adding.
 - [00-02]: ERROR_CAP = 10 enforced at render time, not collection time — unbounded add() is intentional, report() renders at most 10 blocks.
+- [Phase ?]: ATENA_KEYWORDS has 19 entries (plan said 18, but enumerated list had 19 matching tokens.KEYWORDS)
+- [Phase ?]: suggest() uses case-only check before difflib fuzzy check — D-06 capitalization rule fires first
+- [Phase ?]: errors.py imports only stdlib (difflib); zero sibling-module imports enforced
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-13T21:00:19.782Z
-Stopped at: Completed 00-02-PLAN.md — ErrorCollector implementation
+Last session: 2026-06-13T21:05:44.051Z
+Stopped at: Completed 00-04-PLAN.md — suggest() implementation
 Resume file: None
