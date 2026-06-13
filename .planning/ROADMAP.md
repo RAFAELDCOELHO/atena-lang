@@ -13,7 +13,7 @@ Atena is a teaching transpiler (Atena → Python 3) built as a single-pass pipel
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 0: Diagnostics Spine & Data Contracts** - Shared ErrorCollector, exact error format, position-bearing Token/AST contracts, stub CLI
+- [x] **Phase 0: Diagnostics Spine & Data Contracts** - Shared ErrorCollector, exact error format, position-bearing Token/AST contracts, stub CLI (completed 2026-06-13)
 - [ ] **Phase 1: Lexer** - Source → balanced token stream with INDENT/DEDENT, blank/comment skipping, tab-space policy
 - [ ] **Phase 2: Parser** - Token stream → AST honoring the precedence ladder, with syntax-error recovery
 - [ ] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision
@@ -54,7 +54,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 00-05-PLAN.md — Stub CLI + internal-error fallback: argparse, file-error handling, no-traceback promise
+- [x] 00-05-PLAN.md — Stub CLI + internal-error fallback: argparse, file-error handling, no-traceback promise
 
 ### Phase 1: Lexer
 
@@ -151,7 +151,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Diagnostics Spine & Data Contracts | 4/5 | In Progress|  |
+| 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 0/TBD | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
