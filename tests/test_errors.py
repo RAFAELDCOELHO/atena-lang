@@ -259,8 +259,14 @@ def test_s9_exact_match_not_suggested() -> None:
 
 
 def test_s10_atena_keywords_count_and_membership() -> None:
-    """S-10: ATENA_KEYWORDS has exactly 18 entries including 'show' and 'function'."""
-    assert len(ATENA_KEYWORDS) == 18
+    """S-10: ATENA_KEYWORDS has exactly 19 entries including 'show' and 'function'.
+
+    The plan spec lists 19 keywords (show ask if else while repeat times and or
+    not function return add to remove from length true false), consistent with
+    tokens.KEYWORDS which also has 19 entries and its own comment noting 18 — that
+    comment had an off-by-one; the authoritative count comes from the enumerated list.
+    """
+    assert len(ATENA_KEYWORDS) == 19
     assert "show" in ATENA_KEYWORDS
     assert "function" in ATENA_KEYWORDS
 

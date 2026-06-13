@@ -11,6 +11,7 @@ errors across the entire run. The pipeline gates codegen on .is_empty().
 
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass
 
 ERROR_CAP: int = 10
@@ -84,12 +85,50 @@ class ErrorCollector:
         return result
 
 
-ATENA_KEYWORDS: list[str] = []  # TODO: populated in Plan 04
+ATENA_KEYWORDS: list[str] = [
+    "show", "ask", "if", "else", "while", "repeat", "times",
+    "and", "or", "not", "function", "return", "add", "to",
+    "remove", "from", "length", "true", "false",
+]
+"""All 19 Atena v1.0 reserved words as a plain list.
+
+Phases that report unknown-name errors can build a candidate set like:
+    user_candidates = list(ATENA_KEYWORDS) + known_variable_names
+This list is maintained independently — errors.py must not import sibling
+modules so it remains usable from any pipeline phase without circular imports.
+"""
 
 
 def suggest(name: str, candidates: list[str]) -> str | None:
-    """Return the single closest candidate name, or None if no close match.
+    """Return a ready-to-append suggestion string, or None if no close match.
 
-    TODO: implemented in Plan 04
+    Algorithm:
+    1. Return None immediately if candidates is empty.
+    2. Return None if name is already an exact match in candidates.
+    3. Case-only check first (D-06): if any candidate matches case-insensitively,
+       return the D-06 form with capitalization note.
+    4. Fuzzy check via difflib.get_close_matches (cutoff=0.6, n=1).
+    5. Return None if no match found.
+
+    The candidate set is caller-supplied — this function accepts any arbitrary
+    list of names (variables, keywords, or any mix). Candidate set size is
+    bounded in practice by the number of names in one Atena program (a few
+    hundred at most), so difflib's O(n*m) cost is not a concern.
     """
-    ...
+    if not candidates:
+        return None
+    if name in candidates:
+        return None
+
+    # Case-only check: find the first candidate whose lowercase matches.
+    name_lower = name.lower()
+    for candidate in candidates:
+        if name_lower == candidate.lower():
+            return f'Did you mean "{candidate}"? Names must match capitalization exactly.'
+
+    # Fuzzy check: up to 1 match, at least 60% similarity.
+    matches = difflib.get_close_matches(name, candidates, n=1, cutoff=0.6)
+    if matches:
+        return f'Did you mean "{matches[0]}"?'
+
+    return None
