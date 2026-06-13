@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 0 context gathered
-last_updated: "2026-06-13T20:49:49.504Z"
+last_updated: "2026-06-13T20:54:31.313Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 00 (diagnostics-spine-data-contracts) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-13
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -53,6 +53,10 @@ Progress: [██░░░░░░░░] 20%
 
 *Updated after each plan completion*
 
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 00 P02 | 5 min | 3 tasks, 2 files | — |
+
 ## Accumulated Context
 
 ### Decisions
@@ -64,6 +68,9 @@ Recent decisions affecting current work:
 - [Roadmap]: Analyzer→Generator is a contract, not just a phase boundary — the Analyzer decides every semantic transformation (1→0 index rewrite, str() coercion, arity/undefined checks); the Generator emits verbatim and never re-transforms.
 - [Roadmap]: Each phase is "green" only across three test layers — golden snapshots, execution tests (run the generated Python), and error-path tests (exact message, count, line order); codegen self-checks every output with `ast.parse()`.
 - [PROJECT]: Build order is forced by pipeline contracts (source → tokens → AST → analyzed AST → Python); one phase at a time, 100% green before advancing.
+- [00-02]: Dedup key is (line, message) only — source_line is display-only, not part of error identity; two calls on same line/message always collapse.
+- [00-02]: Dedup happens at report() time, not add() time — keeps add() O(1); phases never need to guard against double-adding.
+- [00-02]: ERROR_CAP = 10 enforced at render time, not collection time — unbounded add() is intentional, report() renders at most 10 blocks.
 
 ### Pending Todos
 
@@ -90,6 +97,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-13T20:49:49.497Z
-Stopped at: Phase 0 context gathered
+Last session: 2026-06-13T20:54:31.309Z
+Stopped at: Completed 00-02-PLAN.md — ErrorCollector implementation
 Resume file: None

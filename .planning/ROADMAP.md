@@ -45,7 +45,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 00-02-PLAN.md — ErrorCollector core: add/is_empty/report, format template, dedup, sort, cap
+- [x] 00-02-PLAN.md — ErrorCollector core: add/is_empty/report, format template, dedup, sort, cap
 - [ ] 00-03-PLAN.md — Token + AST node data contracts: TokenType enum, Token dataclass, 22 AST node dataclasses
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -151,7 +151,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Diagnostics Spine & Data Contracts | 1/5 | In Progress|  |
+| 0. Diagnostics Spine & Data Contracts | 2/5 | In Progress|  |
 | 1. Lexer | 0/TBD | Not started | - |
 | 2. Parser | 0/TBD | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
