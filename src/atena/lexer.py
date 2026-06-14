@@ -17,9 +17,12 @@ class Lexer:
     """Scans Atena source text into a list[Token]."""
 
     def __init__(self, source: str, errors: ErrorCollector) -> None:
-        self._source = source
+        # Normalize line endings up front so Windows (CRLF) and legacy (lone CR)
+        # files lex identically to LF. Without this, a trailing '\r' survives
+        # rstrip('\n') and hits the unexpected-character handler on every line.
+        self._source = source.replace('\r\n', '\n').replace('\r', '\n')
         self._errors = errors           # injected — never instantiate internally
-        self._lines = source.splitlines(keepends=True)
+        self._lines = self._source.splitlines(keepends=True)
         self._pos = 0
         self._line = 1                  # 1-based (matches Token.line contract)
         self._col = 0                   # 0-based (matches Token.col contract)

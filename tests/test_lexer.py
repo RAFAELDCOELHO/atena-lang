@@ -361,3 +361,22 @@ def test_L8_non_ascii_digit_rejected():
     # It is reported as a plain-English error pinned to its line; no Python exception escapes.
     assert not ec.is_empty()
     assert "Error on line 1" in ec.report()
+
+
+def test_Lx_crlf_and_cr_line_endings():
+    """CRLF and lone-CR source lex identically to LF — no spurious errors (WR-01).
+
+    Windows-saved .atena files use \\r\\n; some legacy tools use lone \\r. Without
+    normalization the trailing \\r hits the unexpected-character handler on every line.
+    """
+    lf, crlf, cr = "if x\n    show y\n", "if x\r\n    show y\r\n", "if x\r    show y\r"
+    lf_tokens, lf_ec = _lex(lf)
+    crlf_tokens, crlf_ec = _lex(crlf)
+    cr_tokens, cr_ec = _lex(cr)
+    # No errors for the LF baseline, nor for the CRLF/CR variants.
+    assert lf_ec.is_empty()
+    assert crlf_ec.is_empty()
+    assert cr_ec.is_empty()
+    # The full token stream (types, values, and positions) matches the LF version exactly.
+    assert crlf_tokens == lf_tokens
+    assert cr_tokens == lf_tokens
