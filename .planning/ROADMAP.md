@@ -199,7 +199,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — transpile() driver: four-phase wiring + between-phase error gating (CLI-01, CLI-02, CLI-03)
+- [x] 05-01-PLAN.md — transpile() driver: four-phase wiring + between-phase error gating (CLI-01, CLI-02, CLI-03)
 
 **Wave 2** *(blocked on Wave 1 completion — plans 05-02 and 05-03 run in parallel)*
 
@@ -235,5 +235,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
-| 5. CLI Runtime & Pipeline Integration | 0/4 | Not started | - |
+| 5. CLI Runtime & Pipeline Integration | 1/4 | In Progress|  |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
