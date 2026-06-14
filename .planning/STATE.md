@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-06-14T19:51:56.726Z"
-last_activity: 2026-06-14 -- Phase 04 planning complete
+last_updated: "2026-06-14T20:04:01.584Z"
+last_activity: 2026-06-14
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 21
-  completed_plans: 17
+  completed_plans: 18
   percent: 57
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** A complete non-programmer can write real algorithmic logic without fighting syntax, and never sees a Python stack trace — only plain-English errors that name the line and show the offending code.
-**Current focus:** Phase 4 — code generator
+**Current focus:** Phase 04 — code-generator
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (code-generator) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 04 planning complete
+Last activity: 2026-06-14
 
-Progress: [██████████] 100%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Progress: [██████████] 100%
 | Phase 03-semantic-analyzer P01 | 5 | 2 tasks | 2 files |
 | Phase 03-semantic-analyzer P02 | 5 | 3 tasks | 1 files |
 | Phase 03-semantic-analyzer P03 | 4 | 3 tasks | 2 files |
+| Phase 04-code-generator P01 | 30 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [03-03]: visit_FunctionDef registers name BEFORE body visit — self-recursion works; no forward-call hoisting for external functions (D-09)
 - [03-03]: Two-level scope via try/finally in visit_FunctionDef — scope never leaks between functions even on internal errors (T-03-07)
 - [03-03]: Phase 3 complete — all 27 analyzer tests GREEN, full 189-test suite passing, SEM-01..SEM-07 satisfied
+- [04-01]: Dot-write (student.grade = 10) uses Assign(name="") + dynamically-set _dot_target=DotAccess(...) on the node — avoids modifying ast_nodes.py (locked contract); codegen checks hasattr(node, "_dot_target")
+- [04-01]: CodeGenerator receives no ErrorCollector — driver gates on errors.is_empty() before calling generate() (GEN-03)
+- [04-01]: Keyword mangling test uses "pass" (valid Atena variable name, Python hard keyword) not "class" (caught by parser Python-ism redirect before codegen)
 
 ### Pending Todos
 
@@ -143,6 +147,6 @@ Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: n
 
 ## Session Continuity
 
-Last session: 2026-06-14T19:06:55.058Z
+Last session: 2026-06-14T20:04:01.579Z
 Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-code-generator/04-CONTEXT.md
+Resume file: None

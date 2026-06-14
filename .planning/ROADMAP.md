@@ -163,7 +163,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — TDD RED: test_codegen.py stubs + CodeGenerator skeleton + parser dot-write fix (GEN-01, GEN-02, GEN-03, GEN-05)
+- [x] 04-01-PLAN.md — TDD RED: test_codegen.py stubs + CodeGenerator skeleton + parser dot-write fix (GEN-01, GEN-02, GEN-03, GEN-05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -220,6 +220,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
-| 4. Code Generator | 0/5 | Not started | - |
+| 4. Code Generator | 1/5 | In Progress|  |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
