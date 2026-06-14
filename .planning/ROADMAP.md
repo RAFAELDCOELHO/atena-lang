@@ -110,7 +110,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — Statement dispatcher: show, ask (D-01/D-02), if/else, while, repeat, function_def (fn_depth), return, add…to, remove…from; INDENT/DEDENT block parsing wired
+- [x] 02-03-PLAN.md — Statement dispatcher: show, ask (D-01/D-02), if/else, while, repeat, function_def (fn_depth), return, add…to, remove…from; INDENT/DEDENT block parsing wired
 
 **Wave 4** *(blocked on Wave 3 completion — run in parallel with 02-05)*
 
@@ -184,7 +184,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
-| 2. Parser | 2/5 | In Progress|  |
+| 2. Parser | 3/5 | In Progress|  |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
