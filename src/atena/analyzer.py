@@ -161,14 +161,30 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_FunctionDef(self, node: FunctionDef) -> str:
-        """Function definition scope management.
+        """Function definition scope management (SEM-07, D-07).
 
-        Arity registration and two-level scope push/pop are Plan 03 scope work.
-        For now, visit the body so nested expressions (coercions, index rewrites)
-        are still processed.
+        Registers the function name and arity BEFORE visiting the body so that
+        recursive self-calls resolve correctly (no hoisting for external calls
+        though — D-09). Pushes a fresh local scope (params only) for the body,
+        then restores the previous scope unconditionally via try/finally so that
+        no scope leaks even on internal Python errors.
         """
-        for stmt in node.body:
-            self._visit(stmt)
+        # Register BEFORE visiting body (self-recursion resolves; no external hoisting).
+        self._functions[node.name] = len(node.params)
+        self._globals[node.name] = "function"  # top-level code can call it after this point
+
+        # Push local scope (D-07: pure functions — params + local assignments only).
+        saved_locals = self._locals
+        saved_fn = self._current_fn
+        self._locals = {p: "unknown" for p in node.params}
+        self._current_fn = node.name
+        try:
+            for stmt in node.body:
+                self._visit(stmt)
+        finally:
+            # Unconditional restore — scope never leaks regardless of internal errors.
+            self._locals = saved_locals
+            self._current_fn = saved_fn
         return "unknown"
 
     def visit_Return(self, node: Return) -> str:
@@ -176,12 +192,53 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_FunctionCall(self, node: FunctionCall) -> str:
-        """Visit all args bottom-up.
+        """Visit all args bottom-up, then enforce defined-before-called and arity (SEM-07).
 
-        Arity checking and undefined-name detection are Plan 03 scope work.
+        Built-in helpers (length, str, _atena_concat, _atena_index) are always
+        reachable and never arity-checked — they are injected by the analyzer
+        itself and have no user-visible arity constraint.
         """
+        # Step 1: Visit args first (bottom-up expression evaluation).
         for arg in node.args:
             self._visit(arg)
+
+        # Step 2: Built-in pass-through — never in self._functions, never error.
+        if node.name in {"length", "str", "_atena_concat", "_atena_index"}:
+            return "unknown"
+
+        # Step 3: Defined-before-called check (no hoisting — D-09, PITFALLS 20).
+        if node.name not in self._functions:
+            if node.name in self._globals:
+                # Name exists but is a variable, not a function.
+                self._errors.add(
+                    node.line,
+                    f'"{node.name}" is not a function — it\'s a value you stored.'
+                    ' You cannot call it.',
+                    node.source_line,
+                )
+            else:
+                # Completely unknown or defined later in the file.
+                candidates = list(self._globals.keys()) + list(ATENA_KEYWORDS)
+                hint = suggest(node.name, candidates)
+                msg = (
+                    f'I don\'t know a function called "{node.name}" yet'
+                    ' — define it above this line first.'
+                )
+                if hint:
+                    msg = f'{msg} {hint}'
+                self._errors.add(node.line, msg, node.source_line)
+            return "unknown"
+
+        # Step 4: Arity check.
+        expected = self._functions[node.name]
+        given = len(node.args)
+        if expected != given:
+            plural = "s" if expected != 1 else ""
+            self._errors.add(
+                node.line,
+                f'"{node.name}" expects {expected} value{plural}, but you gave {given}.',
+                node.source_line,
+            )
         return "unknown"
 
     def visit_BinOp(self, node: BinOp) -> str:
