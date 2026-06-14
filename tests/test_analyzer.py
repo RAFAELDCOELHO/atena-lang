@@ -443,6 +443,34 @@ def test_A2_builtin_function_user_redefined_checked():
 
 
 # ---------------------------------------------------------------------------
+# WR-03: No stale op/left/right attrs after BinOp.__class__ = FunctionCall swap
+# ---------------------------------------------------------------------------
+
+
+def test_Ax_no_stale_attrs_after_concat_conversion():
+    """After BinOp → _atena_concat conversion, no stale BinOp fields must remain.
+
+    The in-place __class__ swap previously left op/left/right on the object.
+    After the fix, those fields are deleted; only FunctionCall fields remain.
+    """
+    # Use a function-call result (unknown type) to trigger the _atena_concat path.
+    source = "function getValue()\n    return 5\nx = getValue() + 1\n"
+    program, ec = _analyze(source)
+    assign = program.statements[1]
+    rhs = assign.value
+    assert isinstance(rhs, FunctionCall)
+    assert rhs.name == "_atena_concat"
+    # No stale BinOp fields
+    assert not hasattr(rhs, "op"), "Stale 'op' attribute remains after __class__ swap"
+    assert not hasattr(rhs, "left"), "Stale 'left' attribute remains after __class__ swap"
+    assert not hasattr(rhs, "right"), "Stale 'right' attribute remains after __class__ swap"
+    # FunctionCall fields are present
+    assert hasattr(rhs, "name")
+    assert hasattr(rhs, "args")
+    assert len(rhs.args) == 2
+
+
+# ---------------------------------------------------------------------------
 # WR-02: Duplicate function definitions error at second definition
 # ---------------------------------------------------------------------------
 
