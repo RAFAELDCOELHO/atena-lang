@@ -107,7 +107,15 @@ class SemanticAnalyzer:
         return method(node)
 
     def _visit_default(self, node: Node) -> str:
-        """Fallthrough for node types the analyzer does not need to examine."""
+        """Fallthrough for node types the analyzer does not need to examine.
+
+        WR-06: this path is currently unreachable — every concrete AST node type
+        has a dedicated visit_<Type> method (enforced by test_Ax_all_node_types_have_visitors).
+        If a new AST node is added without a corresponding visitor, this fallback
+        silently returns 'unknown' and skips all children — hiding undefined names,
+        un-coerced '+' expressions, and other semantic errors in that subtree.
+        DO NOT add new node types to ast_nodes.py without adding a visitor here.
+        """
         return "unknown"
 
     # -----------------------------------------------------------------------

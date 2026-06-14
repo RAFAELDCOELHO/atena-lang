@@ -443,6 +443,45 @@ def test_A2_builtin_function_user_redefined_checked():
 
 
 # ---------------------------------------------------------------------------
+# WR-06: _visit_default guard — every concrete AST node type has a visitor
+# ---------------------------------------------------------------------------
+
+
+def test_Ax_all_node_types_have_visitors():
+    """Every concrete AST node class must have a dedicated visit_<Type> method.
+
+    _visit_default silently returns 'unknown' for unhandled node types, which
+    would hide entire subtrees (undefined names, un-coerced '+', etc.) if a
+    new node were added without a visitor. This test makes the gap surface at
+    development time rather than production (WR-06).
+    """
+    import inspect
+    import atena.ast_nodes as nodes_module
+    from atena.ast_nodes import Node
+
+    # Collect all concrete node subclasses from the ast_nodes module.
+    concrete_node_types = [
+        name for name, cls in inspect.getmembers(nodes_module, inspect.isclass)
+        if issubclass(cls, Node) and cls is not Node
+    ]
+
+    ec = ErrorCollector()
+    from atena.ast_nodes import Program
+    analyzer = SemanticAnalyzer(Program(), ec)
+
+    missing = [
+        name for name in concrete_node_types
+        if not hasattr(analyzer, f"visit_{name}")
+    ]
+
+    assert missing == [], (
+        f"SemanticAnalyzer._visit_default would silently swallow these node types "
+        f"(no visit_<Type> method): {missing}. Add a visitor or wire up the default "
+        f"traversal for each."
+    )
+
+
+# ---------------------------------------------------------------------------
 # WR-04: Poisoned name overwritten by valid subsequent assignment
 # ---------------------------------------------------------------------------
 
