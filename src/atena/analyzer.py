@@ -20,12 +20,37 @@ from atena.ast_nodes import (
 )
 
 # ---------------------------------------------------------------------------
-# Module-level constants (stubs — logic added in Plan 02)
+# Module-level constants
 # ---------------------------------------------------------------------------
 
-_HUMAN_TYPE: dict[str, str] = {}
+# Maps internal type lattice names to plain-English labels for error messages.
+_HUMAN_TYPE: dict[str, str] = {
+    "str":     "text",
+    "number":  "number",
+    "bool":    "true/false",
+    "list":    "list",
+    "dict":    "dictionary",
+    "unknown": "unknown",
+}
 
-_COERCE_TABLE: dict[tuple[str, str], str] = {}
+# (left_type, right_type) → outcome for the "+" operator.
+# Covers all known-type (str / number / bool) pairings explicitly.
+# Any pair involving "list", "dict", or an unlisted combination falls to the
+# `.get(..., "error")` fallback in visit_BinOp — the fallback produces the
+# same "error" outcome and keeps this table readable.
+# "unknown" on either side is handled by a short-circuit BEFORE table lookup
+# (D-02) so "unknown" keys are intentionally absent.
+_COERCE_TABLE: dict[tuple[str, str], str] = {
+    ("str",    "str"):    "no_coerce",
+    ("str",    "number"): "coerce_right",   # wrap number in str()
+    ("str",    "bool"):   "coerce_right",   # wrap bool in str()
+    ("number", "str"):    "coerce_left",    # wrap number in str()
+    ("number", "number"): "no_coerce",
+    ("number", "bool"):   "error",
+    ("bool",   "str"):    "coerce_left",    # wrap bool in str()
+    ("bool",   "number"): "error",
+    ("bool",   "bool"):   "error",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -86,30 +111,66 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_Assign(self, node: Assign) -> str:
+        """Visit the assigned value for type inference.
+
+        Symbol table registration is implemented in Plan 03 (scope/arity).
+        """
+        self._visit(node.value)
         return "unknown"
 
     def visit_Show(self, node: Show) -> str:
+        self._visit(node.value)
         return "unknown"
 
     def visit_Ask(self, node: Ask) -> str:
+        """ask results are always typed str (D-03).
+
+        Symbol table registration (node.target → "str") is Plan 03 scope work.
+        """
         return "unknown"
 
     def visit_If(self, node: If) -> str:
+        self._visit(node.condition)
+        for stmt in node.then_body:
+            self._visit(stmt)
+        for stmt in node.else_body:
+            self._visit(stmt)
         return "unknown"
 
     def visit_While(self, node: While) -> str:
+        self._visit(node.condition)
+        for stmt in node.body:
+            self._visit(stmt)
         return "unknown"
 
     def visit_Repeat(self, node: Repeat) -> str:
+        self._visit(node.count)
+        for stmt in node.body:
+            self._visit(stmt)
         return "unknown"
 
     def visit_FunctionDef(self, node: FunctionDef) -> str:
+        """Function definition scope management.
+
+        Arity registration and two-level scope push/pop are Plan 03 scope work.
+        For now, visit the body so nested expressions (coercions, index rewrites)
+        are still processed.
+        """
+        for stmt in node.body:
+            self._visit(stmt)
         return "unknown"
 
     def visit_Return(self, node: Return) -> str:
+        self._visit(node.value)
         return "unknown"
 
     def visit_FunctionCall(self, node: FunctionCall) -> str:
+        """Visit all args bottom-up.
+
+        Arity checking and undefined-name detection are Plan 03 scope work.
+        """
+        for arg in node.args:
+            self._visit(arg)
         return "unknown"
 
     def visit_BinOp(self, node: BinOp) -> str:
@@ -119,31 +180,38 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_ListLiteral(self, node: ListLiteral) -> str:
-        return "unknown"
+        for elem in node.elements:
+            self._visit(elem)
+        return "list"
 
     def visit_DictLiteral(self, node: DictLiteral) -> str:
-        return "unknown"
+        for _key, val in node.pairs:
+            self._visit(val)
+        return "dict"
 
     def visit_IndexAccess(self, node: IndexAccess) -> str:
         return "unknown"
 
     def visit_DotAccess(self, node: DotAccess) -> str:
+        self._visit(node.target)
         return "unknown"
 
     def visit_ListAdd(self, node: ListAdd) -> str:
+        self._visit(node.value)
         return "unknown"
 
     def visit_ListRemove(self, node: ListRemove) -> str:
+        self._visit(node.value)
         return "unknown"
 
     def visit_Identifier(self, node: Identifier) -> str:
         return "unknown"
 
     def visit_NumberLiteral(self, node: NumberLiteral) -> str:
-        return "unknown"
+        return "number"
 
     def visit_StringLiteral(self, node: StringLiteral) -> str:
-        return "unknown"
+        return "str"
 
     def visit_BoolLiteral(self, node: BoolLiteral) -> str:
-        return "unknown"
+        return "bool"
