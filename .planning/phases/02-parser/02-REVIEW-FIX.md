@@ -3,10 +3,10 @@ phase: 02-parser
 fixed_at: 2026-06-14T12:45:12Z
 review_path: .planning/phases/02-parser/02-REVIEW.md
 iteration: 1
-findings_in_scope: 4
-fixed: 4
+findings_in_scope: 5
+fixed: 5
 skipped: 0
-deferred: 1
+deferred: 0
 status: all_fixed
 ---
 
@@ -17,16 +17,16 @@ status: all_fixed
 **Iteration:** 1
 
 **Summary:**
-- Findings in scope (this pass): WR-01, WR-02, WR-03, WR-05
-- Fixed: 4
+- Findings in scope: WR-01, WR-02, WR-03, WR-05 (initial pass) + WR-04 (after user design decision)
+- Fixed: 5 (all warnings)
 - Skipped: 0
-- Deferred (explicit scope override): 1 (WR-04)
-- Info findings (IN-01/IN-02/IN-03): out of scope this pass; IN-01 applied opportunistically (see WR-01)
+- Deferred: 0
+- Info findings (IN-01/IN-02/IN-03): out of scope; IN-01 applied opportunistically (see WR-01)
 
-All 161 tests remain green after every fix (150 baseline + 11 new regression tests
-added across the four fixes). Each fix was committed atomically together with its
-regression test. REVIEW-FIX.md itself is NOT committed by the fixer — the orchestrator
-commits it.
+All 162 tests green after every fix (150 baseline + 12 new regression tests). WR-01/02/03/05
+were applied in the initial `--fix` pass (commits 2f0bf78, a774dd3, f292f6d, c820939). WR-04
+was applied in a follow-up commit (35da857) after the user explicitly chose to align `not`
+precedence with Python. Each fix was committed atomically together with its regression test.
 
 ## Fixed Issues
 
@@ -96,17 +96,23 @@ arithmetic (`a + b == c + d`), two comparisons joined by `and` (`a == b and c ==
 `test_P2_chained_equality_rejected`, `test_P2_single_comparison_of_arithmetic_ok`,
 `test_P2_two_comparisons_joined_by_and_ok` (Layer 2).
 
-## Deferred Issues
+### WR-04: Unary `not` binds tighter than comparison — aligned with Python by user decision
 
-### WR-04: Unary `not` binds tighter than comparison
-
-**File:** `src/atena/parser.py:231-247`
-**Disposition:** deferred — design decision required
-**Reason:** Per explicit scope override. `not`'s tight binding is a deliberate, tested
-decision: `test_Px_logical_not_in_condition` asserts `not x == 0` parses as `(not x) == 0`
-with `ec.is_empty()`. The review's preferred fix (give `not` a binding power below comparison)
-would break that passing test and silently flip Atena-vs-Python semantics — a design call for
-a human, not an automated fix. No edit was made to `parser.py` or any test for WR-04.
+**Files modified:** `src/atena/parser.py`, `tests/test_parser.py`
+**Commit:** 35da857
+**Disposition:** fixed (after explicit human design decision — "Align with Python now")
+**Applied fix:** Added a module-level `_NOT_OPERAND_BP = _BINARY_BP["and"]` and changed the
+`not` branch of `_parse_unary` to parse its operand via `self._parse_expression(_NOT_OPERAND_BP)`
+instead of `self._parse_unary()`. `not` now binds looser than comparison but tighter than
+`and`/`or`, matching Python and the natural-language reading. Verified across cases:
+`not a == b` → `not (a == b)`; `not a and b` → `(not a) and b`; `a and not b` → `a and (not b)`;
+`not not a` → `not (not a)`. `test_Px_logical_not_in_condition` was updated to the new AST
+(the only existing test that pinned the old behavior; updated under explicit user authorization,
+not silently weakened).
+**Regression test added:** `test_Px_not_precedence_python_aligned` (Layer 3).
+**Note:** This diverges `not`'s grouping from `(not x) == 0` to `not (x == 0)`. Downstream
+phases (analyzer/generator) emit verbatim from the AST, so the generated Python now reads
+`not (x == 0)` — consistent with how a Python reader interprets the same source.
 
 ## Out of Scope (Info — no `--all` this pass)
 
