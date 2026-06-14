@@ -102,7 +102,7 @@ def test_G1_repeat_generates_for_loop():
 
 def test_G1_if_else_generates_correctly():
     """Basic if/else → generated Python contains 'if' and 'else:'."""
-    result = _generate("if x > 0\n    show x\nelse\n    show 0\n")
+    result = _generate("x = 5\nif x > 0\n    show x\nelse\n    show 0\n")
     assert "if " in result
     assert "else:" in result
 

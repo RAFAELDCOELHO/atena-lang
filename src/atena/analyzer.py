@@ -350,8 +350,14 @@ class SemanticAnalyzer:
         left_type = self._visit(node.left)
         right_type = self._visit(node.right)
 
+        if node.op in ("-", "*", "/"):
+            # Arithmetic ops on integers: always produce a number in Atena v1.0.
+            # Return "number" so that compound expressions like 2 + (3 * 4) correctly
+            # type-check as number + number and avoid _atena_concat routing.
+            return "number"
+
         if node.op != "+":
-            # Non-+ operators: no static type-checking in v1.0 (D-04).
+            # Comparison and logical ops: no static type-checking in v1.0 (D-04).
             return "unknown"
 
         # Idempotency guard (CR-01): if this BinOp was already coerced on a
