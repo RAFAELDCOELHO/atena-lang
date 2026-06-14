@@ -37,7 +37,7 @@ _HUMAN_TYPE: dict[str, str] = {
 # _BUILTIN_HELPERS: user-visible built-ins that appear in source and in emitted code.
 # _INTERNAL_HELPERS: injected by the analyzer itself; must NEVER be writable by users
 #   (their names start with "_atena_" — that prefix is reserved).
-_BUILTIN_HELPERS: frozenset[str] = frozenset({"length", "str"})
+_BUILTIN_HELPERS: frozenset[str] = frozenset({"length"})
 _INTERNAL_HELPERS: frozenset[str] = frozenset({"_atena_concat", "_atena_index"})
 
 # (left_type, right_type) → outcome for the "+" operator.
@@ -359,6 +359,17 @@ class SemanticAnalyzer:
         rewrite (coerce_right, coerce_left) so a second analyze pass is a no-op.
         Mirrors the IndexAccess.index_converted pattern.
         """
+        # Idempotency guard (CR-01): if this BinOp was already coerced on a
+        # previous pass, short-circuit immediately WITHOUT visiting children.
+        # This is critical: after coercion the right/left operand is a
+        # FunctionCall("str", ...) that was injected by the analyzer itself.
+        # Visiting it on a second pass would route through visit_FunctionCall,
+        # which (after WR-01 fix) would report "str" as an undefined function
+        # because injected str() nodes are never user-defined.
+        # Short-circuiting here is safe: the node is already in final form.
+        if getattr(node, "_coerced", False):
+            return "str"
+
         left_type = self._visit(node.left)
         right_type = self._visit(node.right)
 
@@ -371,14 +382,6 @@ class SemanticAnalyzer:
         if node.op != "+":
             # Comparison and logical ops: no static type-checking in v1.0 (D-04).
             return "unknown"
-
-        # Idempotency guard (CR-01): if this BinOp was already coerced on a
-        # previous pass, treat the injected str() operand as "str" so the
-        # table lookup takes the no-coerce branch and we skip the mutation.
-        if getattr(node, "_coerced", False):
-            # Node was previously coerced — operands are already in final form.
-            # Re-derive the combined type (str + str → "str") without mutating.
-            return "str"
 
         # Short-circuit: if either side is unknown, route through runtime helper (D-02).
         if left_type == "unknown" or right_type == "unknown":
