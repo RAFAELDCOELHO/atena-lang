@@ -149,6 +149,18 @@ class SemanticAnalyzer:
         # Register the variable's inferred type in the current scope so that
         # subsequent uses (visit_Identifier) can return the correct type for
         # coercion decisions.
+        # WR-04 (single-pass poison-vs-type): if the name was previously poisoned
+        # as "unknown" by an earlier undefined-name reference (visit_Identifier
+        # Case 4), this assignment overwrites it with the freshly inferred type.
+        # This is the safe behaviour: a valid assignment after an undefined use
+        # still produces one error (for the earlier undefined use) but the type
+        # is corrected for subsequent expressions.
+        # Known v1.0 limitation: a name USED before its assignment (used-then-
+        # assigned in the same scope) keeps the "unknown" type at the use site
+        # because the analyzer is single-pass and top-down. Any later "+" that
+        # depends on the post-assignment type will route through _atena_concat
+        # rather than the more precise str() coercion. This is intentional and
+        # safe — it over-routes to the runtime helper rather than mis-coercing.
         scope = self._locals if self._locals is not None else self._globals
         scope[node.name] = inferred
         return "unknown"

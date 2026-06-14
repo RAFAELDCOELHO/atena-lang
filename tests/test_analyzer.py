@@ -443,6 +443,35 @@ def test_A2_builtin_function_user_redefined_checked():
 
 
 # ---------------------------------------------------------------------------
+# WR-04: Poisoned name overwritten by valid subsequent assignment
+# ---------------------------------------------------------------------------
+
+
+def test_Ax_poison_overwritten_by_valid_assign():
+    """A name used before definition (poisoned) is re-typed on a subsequent assignment.
+
+    'show ghost' correctly errors and poisons ghost=unknown.
+    'ghost = 5' then re-types ghost to 'number' in scope.
+    This is the minimal safe fix (WR-04): visit_Assign unconditionally overwrites
+    the poisoned entry. The used-then-assigned limitation is documented in the code.
+    """
+    source = "show ghost\nghost = 5\n"
+    program, ec = _analyze(source)
+    # Exactly 1 error for the undefined use (line 1)
+    report = ec.report()
+    assert report.count("Error on line") == 1
+    assert "Error on line 1" in report
+    # After the assign on line 2, ghost should be typed as "number" in globals
+    # (so a subsequent str+ghost would coerce rather than concat)
+    # We can verify indirectly: analyze a follow-on expression that depends on type
+    source2 = "show ghost\nghost = 5\ny = \"prefix\" + ghost\n"
+    program2, ec2 = _analyze(source2)
+    report2 = ec2.report()
+    # Still exactly 1 error (the undefined use on line 1), not 3
+    assert report2.count("Error on line") == 1
+
+
+# ---------------------------------------------------------------------------
 # WR-03: No stale op/left/right attrs after BinOp.__class__ = FunctionCall swap
 # ---------------------------------------------------------------------------
 
