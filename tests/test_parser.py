@@ -703,6 +703,29 @@ def test_P2_trailing_tokens_after_assignment_rejected():
     assert "end of this line" in report
 
 
+# ---------------------------------------------------------------------------
+# Dot-write assignment tests (Phase 4 — added in Plan 04-01)
+# ---------------------------------------------------------------------------
+
+
+def test_dot_write_assignment():
+    """'student.grade = 10' parses as Assign with name='' and a DotAccess _dot_target."""
+    program, ec = _parse("student.grade = 10\n")
+    assert ec.is_empty(), f"Unexpected parse errors:\n{ec.report()}"
+    assert len(program.statements) == 1
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    assert stmt.name == "", f"Expected name='', got '{stmt.name}'"
+    assert hasattr(stmt, "_dot_target"), "Expected _dot_target attribute on Assign"
+    dot = stmt._dot_target
+    assert isinstance(dot, DotAccess), f"Expected DotAccess, got {type(dot)}"
+    assert isinstance(dot.target, Identifier), f"Expected Identifier target, got {type(dot.target)}"
+    assert dot.target.name == "student", f"Expected target.name='student', got '{dot.target.name}'"
+    assert dot.name == "grade", f"Expected dot.name='grade', got '{dot.name}'"
+    assert isinstance(stmt.value, NumberLiteral), f"Expected NumberLiteral value, got {type(stmt.value)}"
+    assert stmt.value.value == 10, f"Expected value=10, got {stmt.value.value}"
+
+
 def test_P2_trailing_tokens_after_show_rejected():
     """'show x y' is rejected and no half-parsed Show leaks into the AST (WR-01)."""
     program, ec = _parse("show x y\n")

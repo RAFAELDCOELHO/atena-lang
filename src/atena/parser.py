@@ -667,6 +667,52 @@ class Parser:
         self._end_statement()
         return ListRemove(target=target_tok.value, value=value, line=kw.line, source_line=kw.source_line)
 
+    def _parse_dot_assignment(self) -> Assign:
+        """Parse: obj.field = <expression>  →  Assign(name="", value=rhs, _dot_target=DotAccess(...))
+
+        Called when current token is IDENTIFIER and peek is DOT.  Handles a
+        flat (one-level) dot-write: `student.grade = 10`.  Nested chains
+        (student.info.grade) are out of v1.0 scope.
+
+        The resulting Assign node carries a dynamically-set `_dot_target`
+        attribute (a DotAccess node) so the code generator can detect and
+        emit it as a subscript Store: `student["grade"] = 10`.  The `name`
+        field is set to "" as a sentinel (codegen checks `hasattr(node, "_dot_target")`).
+
+        Sets `line` and `source_line` from the leading IDENTIFIER token, matching
+        the convention used in `_parse_assignment`.
+        """
+        name_tok = self._advance()          # consume leading IDENTIFIER (e.g. "student")
+        self._advance()                     # consume DOT
+        field_tok = self._expect(
+            TokenType.IDENTIFIER,
+            'Expected a field name after ".".',
+        )
+        self._expect(
+            TokenType.ASSIGN,
+            'Expected "=" after the field name in a dot assignment.',
+        )
+        rhs = self._parse_expression()
+        self._end_statement()
+        dot_target = DotAccess(
+            target=Identifier(
+                name=name_tok.value,
+                line=name_tok.line,
+                source_line=name_tok.source_line,
+            ),
+            name=field_tok.value,
+            line=name_tok.line,
+            source_line=name_tok.source_line,
+        )
+        node = Assign(
+            name="",
+            value=rhs,
+            line=name_tok.line,
+            source_line=name_tok.source_line,
+        )
+        node._dot_target = dot_target  # type: ignore[attr-defined]
+        return node
+
     def _parse_expression_statement(self) -> Node:
         """Parse a bare expression at statement position.
 
@@ -814,6 +860,12 @@ class Parser:
                     'An Atena program is a single file — there\'s nothing to import.',
                     tok.source_line,
                 )
+            # Dot-write assignment: IDENTIFIER followed by DOT → obj.field = value.
+            # Must be checked BEFORE the plain ASSIGN branch because `_peek()` here
+            # is DOT (not ASSIGN), and the ASSIGN branch would fall through to
+            # _parse_expression_statement() which rejects non-FunctionCall expressions.
+            if self._peek().type == TokenType.DOT:
+                return self._parse_dot_assignment()
             # Assignment: IDENTIFIER followed by ASSIGN → assignment statement.
             if self._peek().type == TokenType.ASSIGN:
                 return self._parse_assignment()
