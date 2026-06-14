@@ -120,6 +120,16 @@ Items acknowledged and carried forward from previous milestone close:
 |----------|------|--------|-------------|
 | *(none)* | | | |
 
+## Known v1.0 Limitations
+
+**Untyped function parameters — no static coercion inside function bodies.** Function parameters have `unknown` type at compile time, so any `+` involving a parameter (e.g. `a + b` in a function body) is routed through the `_atena_concat` runtime helper — which decides string-vs-number at runtime (D-02) — instead of being type-checked at analysis time. Consequences:
+
+- Correct numeric calls still work: `add(3, 5)` returns `8` (both runtime values are numbers → the helper adds).
+- A stringy argument silently concatenates: `add(3, "5")` returns `"35"`.
+- A genuinely-invalid combination inside a function (e.g. `list + number`) is NOT caught with a compile-time "Cannot combine" error — it surfaces via the Phase-5 runtime translation layer instead.
+
+Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: number)`, so the analyzer can infer parameter types and restore compile-time coercion / "Cannot combine" checks inside function bodies.
+
 ## Session Continuity
 
 Last session: 2026-06-14T16:30:21.775Z
