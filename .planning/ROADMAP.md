@@ -135,7 +135,7 @@ Plans:
 Plans:
 **Wave 1** *(TDD RED gate — must run first)*
 
-- [ ] 03-01-PLAN.md — TDD RED: SemanticAnalyzer skeleton + all 25+ test_analyzer.py stubs (imports succeed, all tests fail)
+- [x] 03-01-PLAN.md — TDD RED: SemanticAnalyzer skeleton + all 25+ test_analyzer.py stubs (imports succeed, all tests fail)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -198,7 +198,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
-| 3. Semantic Analyzer | 0/3 | Not started | - |
+| 3. Semantic Analyzer | 1/3 | In Progress|  |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |

@@ -42,13 +42,13 @@ The cross-cutting spine. Established before the lexer; every phase plugs into it
 
 The analyzer owns every semantic decision; the generator emits verbatim.
 
-- [ ] **SEM-01**: Analyzer injects `str()` coercion for `string + number` and `string + boolean`, evaluated bottom-up so coercion is correct across chains (e.g. `"a" + 1 + 2`)
-- [ ] **SEM-02**: Analyzer reports a plain-English error ("Cannot combine [type] and [type] with +") for disallowed `+` combinations instead of letting them crash at runtime
-- [ ] **SEM-03**: Analyzer rewrites 1-indexed list access to 0-indexed exactly once (idempotent), including nested indexing (`grid[2][3]` → `grid[1][2]`)
-- [ ] **SEM-04**: Analyzer reports "Lists in Atena start at 1, not 0." for a literal index of `0`, and rejects literal negative indices
-- [ ] **SEM-05**: Analyzer routes variable (non-literal) list indices through a runtime helper that errors on index < 1, so no index silently wraps to Python's negative-index behavior
-- [ ] **SEM-06**: Analyzer detects use of an undefined variable and reports it in plain English (e.g. `I don't know what "xyz" is. Did you forget to create it?`)
-- [ ] **SEM-07**: Analyzer enforces that functions are defined before they are called (no hoisting) and checks call arity (e.g. `"greet" expects 1 value, but you gave 2.`)
+- [x] **SEM-01**: Analyzer injects `str()` coercion for `string + number` and `string + boolean`, evaluated bottom-up so coercion is correct across chains (e.g. `"a" + 1 + 2`)
+- [x] **SEM-02**: Analyzer reports a plain-English error ("Cannot combine [type] and [type] with +") for disallowed `+` combinations instead of letting them crash at runtime
+- [x] **SEM-03**: Analyzer rewrites 1-indexed list access to 0-indexed exactly once (idempotent), including nested indexing (`grid[2][3]` → `grid[1][2]`)
+- [x] **SEM-04**: Analyzer reports "Lists in Atena start at 1, not 0." for a literal index of `0`, and rejects literal negative indices
+- [x] **SEM-05**: Analyzer routes variable (non-literal) list indices through a runtime helper that errors on index < 1, so no index silently wraps to Python's negative-index behavior
+- [x] **SEM-06**: Analyzer detects use of an undefined variable and reports it in plain English (e.g. `I don't know what "xyz" is. Did you forget to create it?`)
+- [x] **SEM-07**: Analyzer enforces that functions are defined before they are called (no hoisting) and checks call arity (e.g. `"greet" expects 1 value, but you gave 2.`)
 
 ### Code Generator
 
@@ -138,13 +138,13 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PARSE-04 | Phase 2 | Complete |
 | PARSE-05 | Phase 2 | Complete |
 | PARSE-06 | Phase 2 | Complete |
-| SEM-01 | Phase 3 | Pending |
-| SEM-02 | Phase 3 | Pending |
-| SEM-03 | Phase 3 | Pending |
-| SEM-04 | Phase 3 | Pending |
-| SEM-05 | Phase 3 | Pending |
-| SEM-06 | Phase 3 | Pending |
-| SEM-07 | Phase 3 | Pending |
+| SEM-01 | Phase 3 | Complete |
+| SEM-02 | Phase 3 | Complete |
+| SEM-03 | Phase 3 | Complete |
+| SEM-04 | Phase 3 | Complete |
+| SEM-05 | Phase 3 | Complete |
+| SEM-06 | Phase 3 | Complete |
+| SEM-07 | Phase 3 | Complete |
 | GEN-01 | Phase 4 | Pending |
 | GEN-02 | Phase 4 | Pending |
 | GEN-03 | Phase 4 | Pending |
