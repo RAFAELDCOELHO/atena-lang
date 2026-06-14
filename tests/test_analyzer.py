@@ -670,3 +670,63 @@ def test_CR02_dot_write_defined_object_no_error():
         f"CR-02: dot-write to a defined dict object must produce NO errors.\n"
         f"Got:\n{ec.report()}"
     )
+
+
+# ---------------------------------------------------------------------------
+# WR-01 (quick 260614-pmc): str is NOT a user-visible Atena builtin
+# ---------------------------------------------------------------------------
+
+
+def test_A2_source_str_call_errors():
+    """A bare source-level 'str(5)' with no user-defined 'function str' must error.
+
+    After removing 'str' from _BUILTIN_HELPERS, str(5) falls through to the
+    undefined-function check in visit_FunctionCall and produces the plain-English
+    "I don't know a function called str yet — define it above this line first."
+    error. Learners never write str() in Atena source; the analyzer injects it
+    internally for coercion.
+    """
+    _, ec = _analyze("x = str(5)\n")
+    assert not ec.is_empty(), (
+        "Expected an error for bare source-level str(5) but ErrorCollector is empty. "
+        "str should not be a user-visible Atena builtin."
+    )
+    report = ec.report()
+    assert '"str"' in report or "'str'" in report, (
+        f"Expected error mentioning 'str' but got:\n{report}"
+    )
+    assert "define it above this line first" in report, (
+        f"Expected 'define it above this line first' in report but got:\n{report}"
+    )
+
+
+def test_A1_injected_coercion_still_works():
+    """Analyzer-injected str() coercion must still work after removing str from _BUILTIN_HELPERS.
+
+    'x = 5; show \"v: \" + x' — the analyzer should inject a FunctionCall(\"str\", [x])
+    around the Identifier x on the right-hand side of the BinOp, producing no errors.
+    The injected node is created directly by visit_BinOp without re-validating against
+    the function table, so removing str from _BUILTIN_HELPERS must not break it.
+    """
+    source = 'x = 5\nshow "v: " + x\n'
+    program, ec = _analyze(source)
+    assert ec.is_empty(), (
+        f"Expected no errors for injected coercion but got:\n{ec.report()}"
+    )
+    # The show statement's value is a BinOp("v: " + str(x))
+    show_stmt = program.statements[1]
+    assert isinstance(show_stmt, Show)
+    binop = show_stmt.value
+    assert isinstance(binop, BinOp), (
+        f"Expected BinOp for show value but got {type(binop).__name__}"
+    )
+    # Right operand must be FunctionCall("str", [Identifier("x")])
+    assert isinstance(binop.right, FunctionCall), (
+        f"Expected FunctionCall wrapping x but got {type(binop.right).__name__}"
+    )
+    assert binop.right.name == "str", (
+        f"Expected injected str() but got name={binop.right.name!r}"
+    )
+    assert len(binop.right.args) == 1
+    assert isinstance(binop.right.args[0], Identifier)
+    assert binop.right.args[0].name == "x"
