@@ -97,7 +97,25 @@ Plans:
   4. A program with three malformed statements reports three plain-English syntax errors (one per bad statement, recovered via synchronization on statement boundaries), not one-per-token spam.
   5. Any malformed input terminates without an infinite loop (the parse loop always makes progress) and never surfaces a Python exception.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1** *(TDD RED gate — must run first)*
+
+- [ ] 02-01-PLAN.md — TDD RED: all parser test stubs in tests/test_parser.py + Parser skeleton (imports, constructor, cursor helpers, _ParseError, empty parse() loop)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Pratt expression parser: _BINARY_BP table, _parse_expression (precedence climbing), _parse_unary (nud/led split), _parse_postfix (tight [] . () chain), _parse_primary (all atom types + list/dict literals + length)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Statement dispatcher: show, ask (D-01/D-02), if/else, while, repeat, function_def (fn_depth), return, add…to, remove…from; INDENT/DEDENT block parsing wired
+
+**Wave 4** *(blocked on Wave 3 completion — run in parallel with 02-05)*
+
+- [ ] 02-04-PLAN.md — Error recovery + Python-ism redirects: _synchronize(), progress invariant backstop, all D-04 redirects (def/elif/for/class/import/==-slip/top-level-return)
+- [ ] 02-05-PLAN.md — Integration tests: golden program parse, pitfall coverage (unary-vs-binary, postfix-in-expression, deep nesting, valid-after-errors, error-count cap)
 
 ### Phase 3: Semantic Analyzer
 
@@ -166,7 +184,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
-| 2. Parser | 0/TBD | Not started | - |
+| 2. Parser | 0/5 | Not started | - |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
