@@ -43,34 +43,46 @@ def existing_atena_file(tmp_path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# C-1 — atena run <existing_file> → placeholder, exit 0
+# C-1 — atena run <existing_file> → executes program, exit 0
 # ---------------------------------------------------------------------------
 
-def test_c1_run_existing_file_shows_placeholder(existing_atena_file: str) -> None:
-    """C-1: 'atena run <file>' with existing file prints placeholder and exits 0."""
+def test_c1_run_existing_file_executes(existing_atena_file: str) -> None:
+    """C-1: 'atena run <file>' with a valid program executes it and exits 0.
+
+    The fixture writes 'show 1\\n', which transpiles to print(1) → output '1'.
+    Phase 5 replaces the old placeholder assertion with the real output check.
+    """
     result = run_cli("run", existing_atena_file)
     assert result.returncode == 0, (
         f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
     )
-    combined = result.stdout + result.stderr
-    assert "Atena can read your program, but running it isn't built yet" in combined, (
-        f"Expected placeholder message in output. Got: {combined!r}"
+    assert "1" in result.stdout, (
+        f"Expected '1' in stdout from 'show 1'. Got stdout: {result.stdout!r}"
+    )
+    assert "Traceback" not in result.stdout + result.stderr, (
+        f"Python traceback must not appear. Got: {result.stdout + result.stderr!r}"
     )
 
 
 # ---------------------------------------------------------------------------
-# C-2 — atena build <existing_file> → placeholder, exit 0
+# C-2 — atena build <existing_file> → emits .py file, exit 0
 # ---------------------------------------------------------------------------
 
-def test_c2_build_existing_file_shows_placeholder(existing_atena_file: str) -> None:
-    """C-2: 'atena build <file>' with existing file prints placeholder and exits 0."""
+def test_c2_build_existing_file_emits_py(existing_atena_file: str) -> None:
+    """C-2: 'atena build <file>' with a valid program writes the .py file and exits 0.
+
+    Phase 5 replaces the old placeholder assertion with the real 'Built' message check.
+    """
     result = run_cli("build", existing_atena_file)
     assert result.returncode == 0, (
         f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
     )
     combined = result.stdout + result.stderr
-    assert "Atena can read your program, but running it isn't built yet" in combined, (
-        f"Expected placeholder message in output. Got: {combined!r}"
+    assert 'Built "prog.py".' in combined, (
+        f"Expected 'Built ...' message in output. Got: {combined!r}"
+    )
+    assert "Traceback" not in combined, (
+        f"Python traceback must not appear. Got: {combined!r}"
     )
 
 
