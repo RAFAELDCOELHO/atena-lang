@@ -262,6 +262,67 @@ class SemanticAnalyzer:
         return "dict"
 
     def visit_IndexAccess(self, node: IndexAccess) -> str:
+        """Rewrite 1-based literal indices to 0-based; route dynamic indices
+        through the _atena_index runtime helper (D-05, D-06).
+
+        Idempotency: the index_converted flag prevents a double-shift when the
+        same node is visited more than once (PITFALLS 6).  For nested access
+        like grid[2][3], visiting the outer node triggers _visit(inner_node)
+        first (step 1 below), so the inner rewrite happens before the outer.
+        """
+        # Step 1: Visit the target first so nested IndexAccess rewrites happen
+        # bottom-up (inner subscript shifts before outer).
+        self._visit(node.target)
+
+        # Step 2: Idempotency guard — never shift an already-converted index.
+        if node.index_converted:
+            self._visit(node.index)
+            return "unknown"
+
+        # Step 3: Literal positive / zero / negative index — resolved at compile time.
+        if isinstance(node.index, NumberLiteral):
+            if node.index.value == 0:
+                # Compile-time literal 0: canonical error (SEM-04).
+                self._errors.add(
+                    node.line,
+                    "Lists in Atena start at 1, not 0.",
+                    node.source_line,
+                )
+                # Do NOT rewrite; do NOT set index_converted.
+            else:
+                # Positive literal n: fold 1-based → 0-based in place.
+                node.index.value -= 1
+                node.index_converted = True
+
+        # Step 4: Literal negative index (UnaryOp "-" wrapping a NumberLiteral).
+        # Negatives parsed as UnaryOp("-", NumberLiteral) — distinct message (D-06).
+        elif (
+            isinstance(node.index, UnaryOp)
+            and node.index.op == "-"
+            and isinstance(node.index.operand, NumberLiteral)
+        ):
+            self._errors.add(
+                node.line,
+                "Atena lists count from 1 — there are no negative positions."
+                " The last item is at length, not -1.",
+                node.source_line,
+            )
+            # Do NOT rewrite; do NOT set index_converted.
+
+        # Step 5: Dynamic index — any Identifier, BinOp, FunctionCall result, etc.
+        # Route through _atena_index runtime helper so the 1→0 shift and the
+        # i < 1 bound check happen at runtime (D-05, PITFALLS 5).
+        else:
+            orig_index = node.index
+            helper = FunctionCall(
+                name="_atena_index",
+                args=[orig_index],
+                line=node.line,
+                source_line=node.source_line,
+            )
+            node.index = helper
+            node.index_converted = True
+
         return "unknown"
 
     def visit_DotAccess(self, node: DotAccess) -> str:
