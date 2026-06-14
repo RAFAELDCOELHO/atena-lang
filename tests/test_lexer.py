@@ -346,3 +346,18 @@ def test_Lx_offramp_no_infinite_loop():
     _, ec = _lex(source)
     # If we get here, no infinite loop occurred.
     assert not ec.is_empty()
+
+
+def test_L8_non_ascii_digit_rejected():
+    """A non-ASCII digit (Arabic-Indic ١, U+0661) is an unexpected character, not a NUMBER.
+
+    Regression for CR-01: str.isdigit() accepts Unicode digits, which would slip through
+    as NUMBER tokens and crash ast.parse() at codegen — a Python traceback reaching the
+    learner. The lexer must reject them with a plain-English error at lex time.
+    """
+    tokens, ec = _lex("y = ١\n")
+    # The non-ASCII digit must NOT become a NUMBER token (the only number-shaped input here).
+    assert not any(t.type == TokenType.NUMBER for t in tokens)
+    # It is reported as a plain-English error pinned to its line; no Python exception escapes.
+    assert not ec.is_empty()
+    assert "Error on line 1" in ec.report()

@@ -241,23 +241,25 @@ class Lexer:
                 self._emit_token(tok_type, word, start_col, source_line)
                 continue
 
-            # Integer (and decimal off-ramp).
-            if ch.isdigit():
+            # Integer (and decimal off-ramp). Guard with isascii() so non-ASCII
+            # Unicode digits (e.g. Arabic-Indic ١٢٣) are not accepted as numbers —
+            # they would otherwise slip through to codegen and crash ast.parse (CR-01).
+            if ch.isdigit() and ch.isascii():
                 start_col = self._col
                 int_buf: list[str] = []
-                while self._current() is not None and self._current().isdigit():
+                while self._current() is not None and self._current().isdigit() and self._current().isascii():
                     int_buf.append(self._current())
                     self._advance()
                 integer_part = ''.join(int_buf)
                 # Decimal off-ramp: digit-dot-digit triggers friendly error.
                 if (self._current() == '.'
                         and self._peek() is not None
-                        and self._peek().isdigit()):
+                        and self._peek().isdigit() and self._peek().isascii()):
                     # Consume the dot.
                     self._advance()
                     # Collect fractional digits.
                     frac_buf: list[str] = []
-                    while self._current() is not None and self._current().isdigit():
+                    while self._current() is not None and self._current().isdigit() and self._current().isascii():
                         frac_buf.append(self._current())
                         self._advance()
                     fraction_part = ''.join(frac_buf)
