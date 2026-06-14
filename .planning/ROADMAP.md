@@ -114,7 +114,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion — run in parallel with 02-05)*
 
-- [ ] 02-04-PLAN.md — Error recovery + Python-ism redirects: _synchronize(), progress invariant backstop, all D-04 redirects (def/elif/for/class/import/==-slip/top-level-return)
+- [x] 02-04-PLAN.md — Error recovery + Python-ism redirects: _synchronize(), progress invariant backstop, all D-04 redirects (def/elif/for/class/import/==-slip/top-level-return)
 - [ ] 02-05-PLAN.md — Integration tests: golden program parse, pitfall coverage (unary-vs-binary, postfix-in-expression, deep nesting, valid-after-errors, error-count cap)
 
 ### Phase 3: Semantic Analyzer
@@ -184,7 +184,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
-| 2. Parser | 3/5 | In Progress|  |
+| 2. Parser | 4/5 | In Progress|  |
 | 3. Semantic Analyzer | 0/TBD | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
