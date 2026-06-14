@@ -443,6 +443,32 @@ def test_A2_builtin_function_user_redefined_checked():
 
 
 # ---------------------------------------------------------------------------
+# WR-02: Duplicate function definitions error at second definition
+# ---------------------------------------------------------------------------
+
+
+def test_A2_duplicate_function_def_errors():
+    """Two 'function f(...)' definitions produce an error at the second one."""
+    source = "function f(a)\n    return a\nfunction f(a, b)\n    return a\nf(1)\n"
+    _, ec = _analyze(source)
+    assert not ec.is_empty()
+    report = ec.report()
+    # Error must mention the duplicate name and point to the second definition (line 3)
+    assert '"f"' in report or "'f'" in report
+    assert "already defined" in report or "Error on line 3" in report
+
+
+def test_Ax_duplicate_function_first_arity_used():
+    """When f is defined twice, the FIRST arity stays so f(1) is correct (arity=1 from first def)."""
+    source = "function f(a)\n    return a\nfunction f(a, b)\n    return a\nf(1)\n"
+    _, ec = _analyze(source)
+    report = ec.report()
+    # Should have exactly 1 error (the redefinition), NOT an arity error for f(1)
+    assert "already defined" in report
+    assert "expects" not in report  # arity error must NOT fire for f(1)
+
+
+# ---------------------------------------------------------------------------
 # CR-02: add/remove validate list target (defined-before-use)
 # ---------------------------------------------------------------------------
 
