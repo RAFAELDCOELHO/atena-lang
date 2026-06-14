@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-06-14T20:04:01.584Z"
+stopped_at: Completed 04-02-PLAN.md — core construct emitters GREEN
+last_updated: "2026-06-14T20:13:03.615Z"
 last_activity: 2026-06-14
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 57
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 04 (code-generator) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-14
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Progress: [█████████░] 86%
 | Phase 03-semantic-analyzer P02 | 5 | 3 tasks | 1 files |
 | Phase 03-semantic-analyzer P03 | 4 | 3 tasks | 2 files |
 | Phase 04-code-generator P01 | 30 | 2 tasks | 5 files |
+| Phase 04 P02 | 9 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,7 @@ Recent decisions affecting current work:
 - [04-01]: Dot-write (student.grade = 10) uses Assign(name="") + dynamically-set _dot_target=DotAccess(...) on the node — avoids modifying ast_nodes.py (locked contract); codegen checks hasattr(node, "_dot_target")
 - [04-01]: CodeGenerator receives no ErrorCollector — driver gates on errors.is_empty() before calling generate() (GEN-03)
 - [04-01]: Keyword mangling test uses "pass" (valid Atena variable name, Python hard keyword) not "class" (caught by parser Python-ism redirect before codegen)
+- [Phase ?]: [04-02]: Arithmetic ops (-,*,/) return 'number' type in analyzer -- compound expressions like 2+(3*4) don't route through _atena_concat
 
 ### Pending Todos
 
@@ -147,6 +149,6 @@ Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: n
 
 ## Session Continuity
 
-Last session: 2026-06-14T20:04:01.579Z
-Stopped at: Phase 4 context gathered
+Last session: 2026-06-14T20:13:03.610Z
+Stopped at: Completed 04-02-PLAN.md — core construct emitters GREEN
 Resume file: None
