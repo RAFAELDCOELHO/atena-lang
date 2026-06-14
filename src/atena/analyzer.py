@@ -415,6 +415,14 @@ class SemanticAnalyzer:
         return "list"
 
     def visit_DictLiteral(self, node: DictLiteral) -> str:
+        # WR-05 (v1.0 known limitation): dict keys are string literals that
+        # identify fields. We visit the values for type inference but do NOT
+        # validate key names — doing so would require a full dict-type system
+        # (tracking which keys each dict contains). A key typo (e.g.
+        # student = {"naem": "Ana"}) therefore slips to runtime as a KeyError.
+        # Acceptable in v1.0; the generator should emit a guarded access helper
+        # (_atena_index / dot-notation → subscript) in Phase 4 that can convert
+        # the Python KeyError into a plain-English message at runtime.
         for _key, val in node.pairs:
             self._visit(val)
         return "dict"
@@ -484,6 +492,14 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_DotAccess(self, node: DotAccess) -> str:
+        # WR-05 (v1.0 known limitation): we visit the target expression for
+        # type inference and undefined-name detection, but we do NOT validate
+        # node.name (the dot-accessed field name). Statically validating field
+        # names requires a per-variable dict type that records its key set —
+        # a full dict type system that is out of scope for v1.0.
+        # A field typo (e.g. student.naem) slips to runtime as an AttributeError
+        # or KeyError. The Phase-4 generator should route dot access through a
+        # guarded helper that converts these to plain-English errors at runtime.
         self._visit(node.target)
         return "unknown"
 
