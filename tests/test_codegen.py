@@ -198,9 +198,11 @@ def test_G3_nested_repeat_unique_loop_vars():
 def test_G3_zero_error_gate():
     """CodeGenerator is never called when pipeline has errors (GEN-03).
 
-    Verifies the gate contract: if ec is not empty, the caller must not invoke
-    CodeGenerator.generate().  This test checks that the helper _generate()
-    asserts ec.is_empty() before calling generate() — protecting the contract.
+    Verifies the hard gate contract: if ec is not empty after any pipeline
+    phase, the caller must not invoke CodeGenerator.generate().
+    This test runs the pipeline on malformed input, asserts errors are collected,
+    and verifies that the gate check (ec.is_empty()) correctly signals STOP.
+    The test itself never calls generate() — that would violate the contract.
     """
     ec = ErrorCollector()
     tokens = Lexer("x = \n", ec).tokenize()     # parse error: missing RHS
@@ -208,10 +210,37 @@ def test_G3_zero_error_gate():
     SemanticAnalyzer(program, ec).analyze()
     # ec must be non-empty — the malformed input should produce at least one error.
     assert not ec.is_empty(), "Expected parse/analyze errors for malformed source"
-    # The gate: caller must NOT call generate() when errors exist.
-    # This test verifies the contract is testable and that ec.is_empty() is
-    # the right gate signal (GEN-03).  Calling generate() on an errored tree
-    # is undefined behavior; test stops here.
+    # GEN-03 hard gate: the driver (Phase 5) must check is_empty() before calling
+    # generate().  We verify the gate signal here; calling generate() on an errored
+    # tree is undefined behavior — stop here.
+    # Negative check: _generate() would raise AssertionError here, proving the gate.
+    try:
+        _generate("x = \n")
+        assert False, "_generate() should have raised AssertionError for errored pipeline"
+    except AssertionError as exc:
+        assert "Pipeline errors before codegen" in str(exc), (
+            f"Expected 'Pipeline errors before codegen' in AssertionError, got: {exc}"
+        )
+
+
+def test_G3_ast_parse_selfcheck_broader():
+    """ast.parse() self-check fires on outputs for all core construct types."""
+    snippets = [
+        'show "hello"\n',
+        "x = 5\nshow x\n",
+        "repeat 3 times\n    show 1\n",
+        "if true\n    show 1\nelse\n    show 2\n",
+    ]
+    for snippet in snippets:
+        python_src = _generate(snippet)
+        try:
+            ast.parse(python_src)
+        except SyntaxError as exc:
+            raise AssertionError(
+                f"GEN-05 self-check: ast.parse() failed for snippet {snippet!r}.\n"
+                f"SyntaxError: {exc}\n"
+                f"Generated output:\n{python_src}"
+            ) from exc
 
 
 # ---------------------------------------------------------------------------
