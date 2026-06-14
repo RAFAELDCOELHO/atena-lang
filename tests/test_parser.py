@@ -684,3 +684,264 @@ def test_Px_empty_program():
     assert ec.is_empty()
     assert isinstance(program, Program)
     assert program.statements == []
+
+
+# ---------------------------------------------------------------------------
+# Layer 3 Extension — Integration and Pitfall Coverage (Plan 02-05)
+# ---------------------------------------------------------------------------
+# These tests verify all 6 PARSE requirements are satisfied together,
+# exercise the PITFALLS.md "Looks Done But Isn't" parser checklist, and
+# provide the golden multi-statement integration gate for Phase 2.
+# ---------------------------------------------------------------------------
+
+
+def test_Px_golden_program():
+    """Parse a representative multi-construct Atena program; assert shape.
+
+    Covers PARSE-01 (Program AST), PARSE-03 (arbitrary nesting), PARSE-04
+    (function, list-add), and PARSE-05 (no errors on valid input).
+
+    Source structure:
+        function greet(name)       → FunctionDef (top-level stmt 0)
+            show name
+                                   ← blank line inside source (skipped)
+        score = 5                  → Assign        (top-level stmt 1)
+        greet("Ana")               → FunctionCall  (top-level stmt 2)
+        if score > 3               → If            (top-level stmt 3)
+            show "pass"
+        else
+            show "fail"
+        repeat 2 times             → Repeat        (top-level stmt 4)
+            add score to items
+    """
+    source = (
+        "function greet(name)\n"
+        "    show name\n"
+        "\n"
+        "score = 5\n"
+        'greet("Ana")\n'
+        "if score > 3\n"
+        '    show "pass"\n'
+        "else\n"
+        '    show "fail"\n'
+        "repeat 2 times\n"
+        "    add score to items\n"
+    )
+    program, ec = _parse(source)
+    assert ec.is_empty(), f"Expected no errors, got:\n{ec.report()}"
+    assert len(program.statements) == 5, (
+        f"Expected 5 top-level statements, got {len(program.statements)}: "
+        f"{[type(s).__name__ for s in program.statements]}"
+    )
+    # stmt 0: FunctionDef
+    assert isinstance(program.statements[0], FunctionDef)
+    assert program.statements[0].name == "greet"
+    assert program.statements[0].params == ["name"]
+    # stmt 1: Assign
+    assert isinstance(program.statements[1], Assign)
+    assert program.statements[1].name == "score"
+    # stmt 2: FunctionCall
+    assert isinstance(program.statements[2], FunctionCall)
+    assert program.statements[2].name == "greet"
+    # stmt 3: If with non-empty else_body
+    assert isinstance(program.statements[3], If)
+    assert len(program.statements[3].else_body) == 1
+    # stmt 4: Repeat
+    assert isinstance(program.statements[4], Repeat)
+
+
+def test_Px_unary_minus_in_expression():
+    """'-a + b' → BinOp('+', UnaryOp('-', Identifier('a')), Identifier('b')).
+
+    Covers PITFALLS.md Pitfall 7 (unary vs binary minus): unary minus binds
+    tighter than binary '+', so '-a + b' is '(-a) + b', NOT '-(a + b)'.
+    PARSE-02: operator precedence correct end-to-end.
+    """
+    program, ec = _parse("x = -a + b\n")
+    assert ec.is_empty()
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    val = stmt.value
+    # Top-level op is '+' (binary)
+    assert isinstance(val, BinOp)
+    assert val.op == "+"
+    # Left side is UnaryOp('-', Identifier('a'))
+    assert isinstance(val.left, UnaryOp)
+    assert val.left.op == "-"
+    assert isinstance(val.left.operand, Identifier)
+    assert val.left.operand.name == "a"
+    # Right side is Identifier('b')
+    assert isinstance(val.right, Identifier)
+    assert val.right.name == "b"
+
+
+def test_Px_postfix_index_inside_expression():
+    """'x = total + scores[1]' → BinOp('+', Identifier('total'), IndexAccess(...)).
+
+    Covers PITFALLS.md Pitfall 9 (postfix chaining inside a larger expression):
+    postfix [] binds tighter than binary '+', so 'scores[1]' is a single
+    IndexAccess node that becomes the right operand of '+'.
+    PARSE-02 + PARSE-04: index access and operator precedence.
+    """
+    program, ec = _parse("x = total + scores[1]\n")
+    assert ec.is_empty()
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    val = stmt.value
+    assert isinstance(val, BinOp)
+    assert val.op == "+"
+    assert isinstance(val.left, Identifier)
+    assert val.left.name == "total"
+    assert isinstance(val.right, IndexAccess)
+    assert isinstance(val.right.target, Identifier)
+    assert val.right.target.name == "scores"
+    assert isinstance(val.right.index, NumberLiteral)
+    assert val.right.index.value == 1
+    assert val.right.index_converted is False
+
+
+def test_Px_deep_nesting():
+    """Function containing if containing while parses to arbitrary depth.
+
+    Covers PARSE-03 (arbitrary nesting depth): three levels of block nesting
+    (function → if → while) all resolve with correct parent-child relationships.
+    """
+    source = (
+        "function process(x)\n"
+        "    if x > 0\n"
+        "        while x > 0\n"
+        "            x = x - 1\n"
+    )
+    program, ec = _parse(source)
+    assert ec.is_empty(), f"Expected no errors, got:\n{ec.report()}"
+    assert len(program.statements) == 1
+    fn = program.statements[0]
+    assert isinstance(fn, FunctionDef)
+    assert fn.name == "process"
+    # Function body contains exactly one If
+    assert len(fn.body) == 1
+    if_node = fn.body[0]
+    assert isinstance(if_node, If)
+    # If body contains exactly one While
+    assert len(if_node.then_body) == 1
+    while_node = if_node.then_body[0]
+    assert isinstance(while_node, While)
+    # While body contains exactly one Assign
+    assert len(while_node.body) == 1
+    assert isinstance(while_node.body[0], Assign)
+
+
+def test_Px_error_count_bounded():
+    """Fifteen bad statements produce at most 10 rendered errors (ERROR_CAP=10).
+
+    Covers PITFALLS.md Pitfall 14 (unbounded error output) and PARSE-06.
+
+    ErrorCollector behavior (verified against src/atena/errors.py):
+    - add() is unbounded — it stores every error record.
+    - report() deduplicates by (line, message), stable-sorts by line, then
+      renders at most ERROR_CAP (=10) error blocks.
+    - 15 'def f()' lines each land on a different line number, so they produce
+      15 unique (line, message) pairs. After dedup (no duplicates here),
+      report() renders only the first 10 and appends the overflow line.
+
+    The test verifies count("Error on line") <= ERROR_CAP in the rendered output.
+    """
+    source = "def f()\n" * 15
+    _, ec = _parse(source)
+    assert not ec.is_empty()
+    report = ec.report()
+    error_count = report.count("Error on line")
+    assert error_count <= 10, (
+        f"Expected at most 10 rendered errors (ERROR_CAP), got {error_count}"
+    )
+
+
+def test_Px_valid_after_errors():
+    """Valid statement after two bad statements is still parsed (error recovery).
+
+    Covers PARSE-05 (synchronization recovery): the parser recovers at each
+    bad statement and continues, so valid code after bad code is still included
+    in the Program AST.
+
+    'def f()' → error (line 1)
+    'for i in items' → error (line 2)
+    'x = 5' → valid Assign node (line 3), must appear in program.statements
+    """
+    source = "def f()\nfor i in items\nx = 5\n"
+    program, ec = _parse(source)
+    assert not ec.is_empty(), "Expected at least 2 errors from bad statements"
+    # Both bad lines should produce errors
+    report = ec.report()
+    assert report.count("Error on line") >= 2
+    # 'x = 5' must have been parsed despite prior errors
+    assigns = [s for s in program.statements if isinstance(s, Assign)]
+    assert len(assigns) >= 1, (
+        "Expected at least one Assign node in program.statements after error recovery"
+    )
+    assert any(a.name == "x" for a in assigns), (
+        "Expected Assign(name='x') from 'x = 5' after recovery"
+    )
+
+
+def test_Px_comparison_precedence():
+    """'x = a + b == c + d' → '==' is the top-level BinOp.
+
+    Covers PARSE-02 (operator precedence): comparison ('==') binds looser than
+    arithmetic ('+'), so 'a + b == c + d' parses as '(a + b) == (c + d)'.
+    PITFALLS.md Pitfall 8: precedence/associativity correct across the full ladder.
+    """
+    program, ec = _parse("x = a + b == c + d\n")
+    assert ec.is_empty()
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    val = stmt.value
+    # Top-level op is '==' (comparison)
+    assert isinstance(val, BinOp)
+    assert val.op == "=="
+    # Left side: BinOp('+', a, b)
+    assert isinstance(val.left, BinOp)
+    assert val.left.op == "+"
+    assert isinstance(val.left.left, Identifier)
+    assert val.left.left.name == "a"
+    assert isinstance(val.left.right, Identifier)
+    assert val.left.right.name == "b"
+    # Right side: BinOp('+', c, d)
+    assert isinstance(val.right, BinOp)
+    assert val.right.op == "+"
+    assert isinstance(val.right.left, Identifier)
+    assert val.right.left.name == "c"
+    assert isinstance(val.right.right, Identifier)
+    assert val.right.right.name == "d"
+
+
+def test_Px_logical_not_in_condition():
+    """'if not x == 0\\n    show x\\n' → If.condition is BinOp('==', UnaryOp('not', x), 0).
+
+    Covers PARSE-02 (logical not in condition): 'not' is a unary prefix that
+    wraps only the immediately following primary (Pratt nud for 'not').
+    Because 'not' calls _parse_unary() which returns to _parse_expression where
+    the '==' binary operator (bp=3) is still consumed, the actual parse tree is:
+        BinOp(op='==', left=UnaryOp(op='not', operand=Identifier('x')), right=NumberLiteral(0))
+    i.e. 'not x == 0' means '(not x) == 0', which is the tightest-unary behavior.
+
+    PITFALLS.md Pitfall 8: logical operator precedence verified end-to-end.
+    The If.condition root is BinOp('=='), not UnaryOp('not').
+    """
+    source = "if not x == 0\n    show x\n"
+    program, ec = _parse(source)
+    assert ec.is_empty()
+    assert len(program.statements) == 1
+    if_node = program.statements[0]
+    assert isinstance(if_node, If)
+    condition = if_node.condition
+    # Top-level is '==' (comparison): '(not x) == 0'
+    assert isinstance(condition, BinOp)
+    assert condition.op == "=="
+    # Left side is UnaryOp('not', Identifier('x'))
+    assert isinstance(condition.left, UnaryOp)
+    assert condition.left.op == "not"
+    assert isinstance(condition.left.operand, Identifier)
+    assert condition.left.operand.name == "x"
+    # Right side is NumberLiteral(0)
+    assert isinstance(condition.right, NumberLiteral)
+    assert condition.right.value == 0
