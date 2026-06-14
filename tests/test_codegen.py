@@ -377,3 +377,132 @@ def test_Gx_on_demand_index_helper_present_when_used():
         f"_atena_index helper should be emitted for programs with dynamic indices.\n"
         f"Got:\n{result}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 04-04: Task 1 — Keyword mangling + nested-repeat uniqueness tests (G3_*)
+# ---------------------------------------------------------------------------
+
+
+def test_G3_keyword_mangling_class():
+    """_mangle('class') returns 'class_' (trailing underscore for Python keyword).
+
+    'class' triggers a Python-ism redirect in the Atena parser, so it cannot
+    reach codegen via the full pipeline.  We test _mangle() directly, which is
+    the function codegen calls for every identifier emission.  This satisfies
+    GEN-04: the mangle function itself is correct for 'class'.
+    """
+    from atena.codegen import _mangle
+    assert _mangle("class") == "class_"
+    # Verify the mangled form parses as valid Python
+    ast.parse("class_ = 5")
+
+
+def test_G3_keyword_mangling_import():
+    """_mangle('import') returns 'import_'.
+
+    'import' is rejected by the Atena parser (Python-ism redirect), so tested
+    directly via _mangle() — the same function codegen calls per GEN-04.
+    """
+    from atena.codegen import _mangle
+    assert _mangle("import") == "import_"
+    ast.parse("import_ = 10")
+
+
+def test_G3_keyword_mangling_execution():
+    """Mangled keyword variable produces correct output when executed.
+
+    'pass' is a Python keyword that Atena accepts as an identifier (not caught
+    by the parser's Python-ism redirect).  Verify 'pass = 42\\nshow pass' runs
+    and prints '42' — confirming that mangling is consistent at both definition
+    and use sites in the generated Python.
+    """
+    python_src = _generate("pass = 42\nshow pass\n")
+    assert "pass_" in python_src
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "42"
+
+
+def test_G3_all_python_keywords_mangled():
+    """All Python keywords that pass through the Atena pipeline are mangled.
+
+    For each keyword in keyword.kwlist that the Atena pipeline accepts as a
+    variable name (not blocked by the lexer/parser's Python-ism detection),
+    verify that:
+    1. The generated Python contains the mangled name (keyword + '_').
+    2. ast.parse() accepts the output.
+    """
+    import keyword as kw
+
+    # These Python keywords are also Atena KEYWORD tokens or trigger Python-ism
+    # redirects in the parser — they never reach codegen as identifiers.
+    pipeline_blocked = {
+        # Atena language keywords (lexed as KEYWORD tokens)
+        "and", "or", "not", "if", "else", "while", "return",
+        "True", "False",  # Atena uses 'true'/'false'; Python-cased forms are blocked
+        # Python-ism redirects in the parser (generates a friendly error, stops pipeline)
+        "class", "import", "for", "def", "elif", "from",
+    }
+
+    passable = [k for k in kw.kwlist if k not in pipeline_blocked]
+
+    for k in passable:
+        result = _generate(f"{k} = 1\nshow {k}\n")
+        mangled = k + "_"
+        assert mangled in result, (
+            f"Expected '{mangled}' in generated output for keyword '{k}'.\n"
+            f"Got:\n{result}"
+        )
+        try:
+            ast.parse(result)
+        except SyntaxError as exc:
+            raise AssertionError(
+                f"ast.parse() failed for mangled keyword '{k}':\n{exc}\n"
+                f"Generated:\n{result}"
+            ) from exc
+
+
+def test_G3_three_sibling_repeats_unique_vars():
+    """Three consecutive repeat loops use 3 distinct _atena_i* loop variables.
+
+    The monotonic counter must never reset between sibling repeat loops,
+    guaranteeing unique vars throughout the entire program.
+    """
+    import re
+    source = (
+        "repeat 1 times\n    show 1\n"
+        "repeat 1 times\n    show 2\n"
+        "repeat 1 times\n    show 3\n"
+    )
+    result = _generate(source)
+    loop_vars = re.findall(r"_atena_i\d+", result)
+    assert len(set(loop_vars)) == 3, (
+        f"Expected 3 unique loop vars for 3 sibling repeats, got: {loop_vars}\n"
+        f"Generated:\n{result}"
+    )
+
+
+def test_G2_nested_repeat_executes_correct_count():
+    """Nested repeat loops execute the correct total iteration count.
+
+    outer 3 * inner 2 = 6 increments of n.  Verifies that the two distinct
+    loop variables (_atena_i0, _atena_i1) do not interfere with each other.
+    """
+    python_src = _generate(
+        "n = 0\nrepeat 3 times\n    repeat 2 times\n        n = n + 1\nshow n\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "6"
+
