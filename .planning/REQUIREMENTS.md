@@ -55,7 +55,7 @@ The analyzer owns every semantic decision; the generator emits verbatim.
 - [x] **GEN-01**: Generator emits valid, runnable Python 3 for core constructs: `show`→`print`, `ask`→`input`, variables, `repeat N times`→`for _i in range(N):`, `while`, `if`/`else` (with colons), boolean/comparison/arithmetic expressions, `true`/`false`→`True`/`False`, `and`/`or`/`not`
 - [x] **GEN-02**: Generator emits list operations (`add`→`.append`, `remove`→`.remove`, `length`→`len`), dict literals (`{name = "Ana"}`→`{"name": "Ana"}`), and dict dot access for both read (`student.name`→`student["name"]`) and write (`student.grade = 10`→`student["grade"] = 10`)
 - [x] **GEN-03**: Generator runs only when zero errors were collected; if any error exists, it emits no Python
-- [ ] **GEN-04**: Generator produces correctly-indented Python, uses a unique loop variable per nested `repeat`, and mangles Atena identifiers that collide with Python keywords
+- [x] **GEN-04**: Generator produces correctly-indented Python, uses a unique loop variable per nested `repeat`, and mangles Atena identifiers that collide with Python keywords
 - [x] **GEN-05**: Every generated program passes an internal `ast.parse()` self-check; invalid output is an internal bug surfaced in tests, never shown to the learner
 - [ ] **GEN-06**: Generator reproduces the spec's golden example (`school.atena`) exactly, matching the expected Python output
 
@@ -148,7 +148,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | GEN-01 | Phase 4 | Complete |
 | GEN-02 | Phase 4 | Complete |
 | GEN-03 | Phase 4 | Complete |
-| GEN-04 | Phase 4 | Pending |
+| GEN-04 | Phase 4 | Complete |
 | GEN-05 | Phase 4 | Complete |
 | GEN-06 | Phase 4 | Pending |
 | CLI-01 | Phase 5 | Pending |

@@ -171,7 +171,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — List/dict/function/return emitters + on-demand helper preamble (_atena_index/_atena_concat bodies) (GEN-01, GEN-02, GEN-04)
+- [x] 04-03-PLAN.md — List/dict/function/return emitters + on-demand helper preamble (_atena_index/_atena_concat bodies) (GEN-01, GEN-02, GEN-04)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -220,6 +220,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
-| 4. Code Generator | 2/5 | In Progress|  |
+| 4. Code Generator | 3/5 | In Progress|  |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
