@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 Phase: 2
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-06-14 - Completed quick task 260614-a8w: guard integer scanner against non-ASCII digits
+Last activity: 2026-06-14 - Completed quick task 260614-aku: lexer CRLF normalization + per-line brace-depth reset
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,7 @@ Two decisions deferred to phase planning (not blockers, but resolve before the p
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260614-a8w | fix(lexer): guard integer scanner against non-ASCII digits (CR-01) | 2026-06-14 | bee9f8f | [260614-a8w-fix-lexer-guard-integer-scanner-against-](./quick/260614-a8w-fix-lexer-guard-integer-scanner-against-/) |
+| 260614-aku | fix(lexer): CRLF/CR normalization (WR-01) + per-line brace-depth reset (WR-02) | 2026-06-14 | 157eae9, 25d0a5d | [260614-aku-fix-lexer-crlf-normalization-and-per-lin](./quick/260614-aku-fix-lexer-crlf-normalization-and-per-lin/) |
 
 ## Deferred Items
 
