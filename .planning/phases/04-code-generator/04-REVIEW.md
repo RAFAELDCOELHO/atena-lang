@@ -34,8 +34,19 @@ resolved:
       performs. test_CR02_dot_write_undefined_object_errors confirms the
       plain-English error; test_CR02_dot_write_defined_object_no_error
       confirms defined-object dot-writes remain error-free.
+  - id: WR-01
+    resolved_at: 2026-06-14
+    fix_commit: 6cf6c40
+    test_commit: 6048f87
+    quick_task: 260614-pmc
+    note: >
+      Removed "str" from _BUILTIN_HELPERS so source-level str() errors with
+      plain-English "I don't know a function called str yet." Also moved the
+      _coerced idempotency guard before child-visits in visit_BinOp so that
+      analyzer-injected FunctionCall("str",...) nodes are never re-validated
+      against the function table on re-analysis. Full suite 253 tests GREEN;
+      school.expected.py golden fixture byte-identical.
 open_issues:
-  - WR-01 (str-builtin shadowing)
   - WR-02 (arithmetic safety-net regression)
   - WR-03 (GEN-05 fallback / no top-level wrap)
   - WR-04 (parser messages for nested dot-write / == typo)
@@ -65,6 +76,9 @@ reaches the learner."
 
 **Update 2026-06-14:** CR-01 and CR-02 are RESOLVED (fix commit `37b41b7`,
 test commit `d86aed9`). Full suite is 251 tests, 0 failures. 4 Warnings remain open.
+
+**Update 2026-06-14 (quick 260614-pmc):** WR-01 is RESOLVED (fix commit `6cf6c40`,
+test commit `6048f87`). Full suite is 253 tests, 0 failures. 3 Warnings remain open.
 
 Two BLOCKERs were proven by end-to-end execution:
 1. Keyword-named functions are mangled at the **definition** site but NOT at the
@@ -171,7 +185,7 @@ nope is" error rather than runnable code.
 
 ## Warnings
 
-### WR-01: User-defined `function str(x)` silently breaks analyzer-injected `str()` coercion
+### WR-01 [RESOLVED — commit 6cf6c40, quick 260614-pmc]: User-defined `function str(x)` silently breaks analyzer-injected `str()` coercion
 
 **File:** `src/atena/codegen.py:384-410` (`_emit_FunctionCall`) +
 `src/atena/analyzer.py:295` (`_BUILTIN_HELPERS` pass-through)

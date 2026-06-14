@@ -133,6 +133,7 @@ Two decisions deferred to phase planning (not blockers, but resolve before the p
 |---|-------------|------|--------|-----------|
 | 260614-a8w | fix(lexer): guard integer scanner against non-ASCII digits (CR-01) | 2026-06-14 | bee9f8f | [260614-a8w-fix-lexer-guard-integer-scanner-against-](./quick/260614-a8w-fix-lexer-guard-integer-scanner-against-/) |
 | 260614-aku | fix(lexer): CRLF/CR normalization (WR-01) + per-line brace-depth reset (WR-02) | 2026-06-14 | 157eae9, 25d0a5d | [260614-aku-fix-lexer-crlf-normalization-and-per-lin](./quick/260614-aku-fix-lexer-crlf-normalization-and-per-lin/) |
+| 260614-pmc | fix(analyzer): remove str from _BUILTIN_HELPERS so source-level str() errors (WR-01) | 2026-06-14 | 6cf6c40 | [260614-pmc-remove-str-builtin](./quick/260614-pmc-remove-str-builtin/) |
 
 ## Deferred Items
 
