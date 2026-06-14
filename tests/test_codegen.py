@@ -329,3 +329,51 @@ def test_G2_list_add_remove_executes():
     )
     assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
     assert result.stdout.strip() == "1"
+
+
+# ---------------------------------------------------------------------------
+# Task 2 tests: FunctionDef/Return/on-demand helpers (G1_function, G2_function, Gx_*)
+# ---------------------------------------------------------------------------
+
+
+def test_G1_function_def_emit():
+    """function definition emits a Python def statement."""
+    result = _generate("function greet(name)\n    show name\n")
+    assert "def greet(name):" in result
+
+
+def test_G2_function_call_executes():
+    """Define and call a function, verify the output."""
+    python_src = _generate(
+        'function greet(name)\n    show name\ngreet("Ana")\n'
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "Ana"
+
+
+def test_G2_function_with_return_executes():
+    """Function with return statement executes and produces correct result."""
+    python_src = _generate("function square(n)\n    return n * n\nshow square(4)\n")
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "16"
+
+
+def test_Gx_on_demand_index_helper_present_when_used():
+    """A program with a dynamic list index has _atena_index prepended in output."""
+    result = _generate("i = 1\ngradeslist = [5, 7, 9]\nshow gradeslist[i]\n")
+    assert "def _atena_index" in result, (
+        f"_atena_index helper should be emitted for programs with dynamic indices.\n"
+        f"Got:\n{result}"
+    )

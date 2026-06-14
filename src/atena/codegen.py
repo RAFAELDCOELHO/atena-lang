@@ -154,7 +154,7 @@ class CodeGenerator:
         """
         body_stmts: list[ast.stmt] = []
         for stmt in self._program.statements:
-            result = self._emit(stmt)
+            result = self._emit_as_stmt(stmt)
             if isinstance(result, list):
                 body_stmts.extend(result)
             else:
@@ -223,6 +223,20 @@ class CodeGenerator:
         method = getattr(self, f"_emit_{type(node).__name__}", self._emit_default)
         return method(node)
 
+    def _emit_as_stmt(self, node: Node) -> ast.stmt | list[ast.stmt]:
+        """Emit node as a statement, wrapping bare expressions in ast.Expr.
+
+        FunctionCall at statement level (e.g. top-level `greet("Ana")` or
+        inside a body list) returns ast.Call (an expr).  Python's AST requires
+        expression-statements to be wrapped in ast.Expr — without the wrapper
+        ast.unparse() concatenates the call to the preceding statement on the
+        same line, producing a SyntaxError.
+        """
+        result = self._emit(node)
+        if isinstance(result, ast.expr):
+            return ast.Expr(value=result)
+        return result  # type: ignore[return-value]
+
     def _emit_default(self, node: Node) -> ast.expr:
         """Fallthrough for unhandled node types — always an internal bug."""
         raise TypeError(
@@ -281,15 +295,15 @@ class CodeGenerator:
         """if condition ... (else ...)  ->  ast.If"""
         return ast.If(
             test=self._emit(node.condition),  # type: ignore[arg-type]
-            body=[self._emit(s) for s in node.then_body],  # type: ignore[list-item]
-            orelse=[self._emit(s) for s in node.else_body],  # type: ignore[list-item]
+            body=[self._emit_as_stmt(s) for s in node.then_body],  # type: ignore[list-item]
+            orelse=[self._emit_as_stmt(s) for s in node.else_body],  # type: ignore[list-item]
         )
 
     def _emit_While(self, node: While) -> ast.While:
         """while condition ...  ->  ast.While"""
         return ast.While(
             test=self._emit(node.condition),  # type: ignore[arg-type]
-            body=[self._emit(s) for s in node.body],  # type: ignore[list-item]
+            body=[self._emit_as_stmt(s) for s in node.body],  # type: ignore[list-item]
             orelse=[],
         )
 
@@ -302,7 +316,7 @@ class CodeGenerator:
         """
         loop_var = f"_atena_i{self._loop_counter}"
         self._loop_counter += 1  # monotonic: never decrement
-        body = [self._emit(s) for s in node.body]  # type: ignore[list-item]
+        body = [self._emit_as_stmt(s) for s in node.body]  # type: ignore[list-item]
         return ast.For(
             target=ast.Name(id=loop_var, ctx=ast.Store()),
             iter=ast.Call(
@@ -327,7 +341,7 @@ class CodeGenerator:
                 kwarg=None,
                 defaults=[],
             ),
-            body=[self._emit(s) for s in node.body] or [ast.Pass()],  # type: ignore[list-item]
+            body=[self._emit_as_stmt(s) for s in node.body] or [ast.Pass()],  # type: ignore[list-item]
             decorator_list=[],
         )
 
