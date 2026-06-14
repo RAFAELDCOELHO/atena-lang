@@ -150,9 +150,51 @@ def test_G2_arithmetic_executes():
     assert result.stdout.strip() == "14"
 
 
-def test_G2_school_execution_placeholder():
-    """Placeholder: school.atena execution test — fails until school.atena is authored."""
-    pytest.fail("school.atena not yet authored")
+def test_G1_golden_school_roundtrip():
+    """school.atena round-trips through the full pipeline to exactly school.expected.py.
+
+    Reads the approved, locked golden fixture from disk, runs the full pipeline,
+    and asserts byte-for-byte text equality.  Any pipeline regression that changes
+    the generated output will be caught here.
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "school.atena").read_text()
+    expected = (fixtures / "school.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"Golden mismatch — pipeline output does not match locked snapshot.\n"
+        f"--- expected ---\n{expected}\n"
+        f"--- got ---\n{result}"
+    )
+
+
+def test_G2_school_execution_with_canned_stdin():
+    """Generated school.expected.py runs correctly with canned stdin 'Ana'.
+
+    Reads the locked golden snapshot, executes it as a subprocess with
+    input='Ana\\n', and asserts:
+    - returncode == 0 (no crashes)
+    - 'Ana' appears in stdout (personalized greeting used the name)
+    - a pass/fail verdict appears in stdout (if/else branch ran)
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "school.expected.py").read_text()
+
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        input="Ana\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert "Ana" in result.stdout, (
+        f"Expected student name 'Ana' in output. Got:\n{result.stdout}"
+    )
+    stdout_lower = result.stdout.lower()
+    assert "pass" in stdout_lower or "fail" in stdout_lower, (
+        f"Expected a pass/fail verdict in output (if/else branch). Got:\n{result.stdout}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -657,3 +699,171 @@ def test_G3_verbatim_nested_index_no_double_shift():
     )
     assert python_result.returncode == 0, f"Generated Python crashed:\n{python_result.stderr}"
     assert python_result.stdout.strip() == "2"
+
+
+# ---------------------------------------------------------------------------
+# Plan 04-05: Task 3 — Targeted fixture tests (G1_*_fixture + G2_*_execution)
+# ---------------------------------------------------------------------------
+
+
+def test_G1_keyword_mangle_fixture():
+    """keyword_mangle.atena round-trips to exactly keyword_mangle.expected.py.
+
+    The fixture uses 'pass' (a Python keyword) as a variable name.  The pipeline
+    must mangle it to 'pass_' so the generated Python parses cleanly.
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "keyword_mangle.atena").read_text()
+    expected = (fixtures / "keyword_mangle.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"keyword_mangle fixture mismatch.\n--- expected ---\n{expected}\n--- got ---\n{result}"
+    )
+    assert "pass_" in result, (
+        f"Expected mangled 'pass_' in generated output.\nGot:\n{result}"
+    )
+
+
+def test_G2_keyword_mangle_execution():
+    """keyword_mangle.expected.py executes and prints '5'."""
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "keyword_mangle.expected.py").read_text()
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "5"
+
+
+def test_G1_nested_repeat_fixture():
+    """nested_repeat.atena round-trips to exactly nested_repeat.expected.py.
+
+    Two nested repeat loops must use 2 distinct _atena_i* loop variables.
+    """
+    import re
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "nested_repeat.atena").read_text()
+    expected = (fixtures / "nested_repeat.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"nested_repeat fixture mismatch.\n--- expected ---\n{expected}\n--- got ---\n{result}"
+    )
+    loop_vars = re.findall(r"_atena_i\d+", result)
+    assert len(set(loop_vars)) == 2, (
+        f"Expected 2 distinct _atena_i* loop variables in nested_repeat output.\n"
+        f"Found: {set(loop_vars)}\nGot:\n{result}"
+    )
+
+
+def test_G2_nested_repeat_execution():
+    """nested_repeat.expected.py executes and prints '6' (3 * 2 iterations)."""
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "nested_repeat.expected.py").read_text()
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "6"
+
+
+def test_G1_dynamic_index_fixture():
+    """dynamic_index.atena round-trips to exactly dynamic_index.expected.py.
+
+    A variable index 'i' must route through the _atena_index runtime helper.
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "dynamic_index.atena").read_text()
+    expected = (fixtures / "dynamic_index.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"dynamic_index fixture mismatch.\n--- expected ---\n{expected}\n--- got ---\n{result}"
+    )
+    assert "_atena_index" in result, (
+        f"Expected '_atena_index' helper in generated output for dynamic index.\nGot:\n{result}"
+    )
+
+
+def test_G2_dynamic_index_execution():
+    """dynamic_index.expected.py executes and prints '5' (grades[i] where i=1, value at index 1)."""
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "dynamic_index.expected.py").read_text()
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "5"
+
+
+def test_G1_concat_helper_fixture():
+    """concat_helper.atena round-trips to exactly concat_helper.expected.py.
+
+    A function with unknown-typed parameters using '+' must route through
+    the _atena_concat runtime helper.
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "concat_helper.atena").read_text()
+    expected = (fixtures / "concat_helper.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"concat_helper fixture mismatch.\n--- expected ---\n{expected}\n--- got ---\n{result}"
+    )
+    assert "_atena_concat" in result, (
+        f"Expected '_atena_concat' helper in generated output.\nGot:\n{result}"
+    )
+
+
+def test_G2_concat_helper_execution():
+    """concat_helper.expected.py executes and prints '35' (str(3)+str(5), not 8)."""
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "concat_helper.expected.py").read_text()
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "35"
+
+
+def test_G1_dict_dot_write_fixture():
+    """dict_dot_write.atena round-trips to exactly dict_dot_write.expected.py.
+
+    Dict dot-write (student.name = 'Ana') must emit a subscript Store
+    assignment (student['name'] = 'Ana') in the generated Python.
+    """
+    fixtures = Path(__file__).parent / "fixtures"
+    source = (fixtures / "dict_dot_write.atena").read_text()
+    expected = (fixtures / "dict_dot_write.expected.py").read_text()
+    result = _generate(source)
+    assert result == expected, (
+        f"dict_dot_write fixture mismatch.\n--- expected ---\n{expected}\n--- got ---\n{result}"
+    )
+
+
+def test_G2_dict_dot_write_execution():
+    """dict_dot_write.expected.py executes and prints 'Ana' then '9'."""
+    fixtures = Path(__file__).parent / "fixtures"
+    python_src = (fixtures / "dict_dot_write.expected.py").read_text()
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert "Ana" in result.stdout, (
+        f"Expected 'Ana' in output from dict dot-write fixture.\nGot:\n{result.stdout}"
+    )
+    assert "9" in result.stdout, (
+        f"Expected '9' in output from dict dot-write fixture.\nGot:\n{result.stdout}"
+    )
