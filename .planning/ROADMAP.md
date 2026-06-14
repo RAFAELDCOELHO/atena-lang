@@ -204,7 +204,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion — plans 05-02 and 05-03 run in parallel)*
 
 - [x] 05-02-PLAN.md — CLI run/build wiring + C-1/C-2 rewrites + C-15 through C-19 (CLI-01, CLI-02, CLI-05, CLI-06)
-- [ ] 05-03-PLAN.md — TDD RED: C-14 rewrite + C-20 through C-24 CLI-04 test stubs (all failing) (CLI-04)
+- [x] 05-03-PLAN.md — TDD RED: C-14 rewrite + C-20 through C-24 CLI-04 test stubs (all failing) (CLI-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -235,5 +235,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
-| 5. CLI Runtime & Pipeline Integration | 2/4 | In Progress|  |
+| 5. CLI Runtime & Pipeline Integration | 3/4 | In Progress|  |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
