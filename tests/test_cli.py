@@ -514,13 +514,20 @@ def test_c19_build_show_flag(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# C-14 — exec runtime error → plain-English message, exit 1, no traceback (CR-01)
+# C-14 — exec runtime error → friendly line-numbered runtime message (D-04/D-05) [RED]
 # ---------------------------------------------------------------------------
 
 def test_c14_exec_runtime_error_no_traceback(
     existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """C-14: Division-by-zero in exec'd code → plain-English message, no traceback."""
+    """C-14: divide-by-zero in exec'd code → friendly line-numbered runtime message (D-04/D-05).
+
+    Divide-by-zero is a learner runtime error, NOT an internal Atena bug.
+    It must produce the canonical format (D-05): 'Error on line N: ...' with '→ source_line'.
+    The old 'Something went wrong inside Atena' wording is for internal bugs only (D-04).
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
     import atena.cli as _cli
     import io
 
@@ -540,12 +547,275 @@ def test_c14_exec_runtime_error_no_traceback(
         f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
     )
     err_output = captured_stderr.getvalue()
-    assert "Something went wrong inside Atena" in err_output, (
-        f"Expected internal-error message. Got: {err_output!r}"
+    assert "Something went wrong inside Atena" not in err_output, (
+        "C-14: divide-by-zero is a learner error, not internal (D-04). "
+        f"Got: {err_output!r}"
+    )
+    assert "Error on line" in err_output, (
+        f"C-14: must follow canonical format (D-05). Got: {err_output!r}"
+    )
+    assert "→" in err_output, (
+        f"C-14: canonical format includes → source line (D-05). Got: {err_output!r}"
     )
     assert "Traceback" not in err_output, (
         f"Python traceback must not appear: {err_output!r}"
     )
     assert "ZeroDivisionError" not in err_output, (
         f"Raw exception class name must not appear: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-20 — exec runtime IndexError (out of range) → friendly message (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c20_runtime_index_error(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-20: IndexError from out-of-range list access → friendly line-numbered message, no Traceback.
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_index_error(source: str, filename: str) -> str | None:
+        return "items = [1, 2, 3]\nprint(items[5])\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_index_error)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Error on line" in err_output, (
+        f"C-20: must follow canonical format (D-05). Got: {err_output!r}"
+    )
+    assert "→" in err_output, (
+        f"C-20: canonical format includes → source line (D-05). Got: {err_output!r}"
+    )
+    assert "Traceback" not in err_output, (
+        f"C-20: Python traceback must not appear. Got: {err_output!r}"
+    )
+    assert "IndexError" not in err_output, (
+        f"C-20: raw exception class name must not appear. Got: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-21 — exec runtime ZeroDivisionError → friendly message (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c21_runtime_zero_division(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-21: ZeroDivisionError → friendly 'divide by zero' message, no Traceback.
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_divzero(source: str, filename: str) -> str | None:
+        return "x = 10 / 0\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_divzero)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Error on line" in err_output, (
+        f"C-21: must follow canonical format (D-05). Got: {err_output!r}"
+    )
+    assert "→" in err_output, (
+        f"C-21: canonical format includes → source line (D-05). Got: {err_output!r}"
+    )
+    assert "Traceback" not in err_output, (
+        f"C-21: Python traceback must not appear. Got: {err_output!r}"
+    )
+    assert "ZeroDivisionError" not in err_output, (
+        f"C-21: raw exception class name must not appear. Got: {err_output!r}"
+    )
+    assert ("divide by zero" in err_output or "denominator" in err_output), (
+        f"C-21: must mention 'divide by zero' or 'denominator' (D-03). Got: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-22 — exec runtime KeyError → friendly message (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c22_runtime_key_error(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-22: KeyError from missing dict key → friendly message, no Traceback.
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_key_error(source: str, filename: str) -> str | None:
+        return 'x = {}\nprint(x["missing"])\n'
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_key_error)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Error on line" in err_output, (
+        f"C-22: must follow canonical format (D-05). Got: {err_output!r}"
+    )
+    assert "→" in err_output, (
+        f"C-22: canonical format includes → source line (D-05). Got: {err_output!r}"
+    )
+    assert "Traceback" not in err_output, (
+        f"C-22: Python traceback must not appear. Got: {err_output!r}"
+    )
+    assert "KeyError" not in err_output, (
+        f"C-22: raw exception class name must not appear. Got: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-23 — exec runtime ValueError (list.remove) → friendly message (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c23_runtime_value_error_remove(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-23: ValueError from list.remove (item not found) → friendly message, no Traceback.
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_value_error(source: str, filename: str) -> str | None:
+        return "x = [1, 2]\nx.remove(99)\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_value_error)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Error on line" in err_output, (
+        f"C-23: must follow canonical format (D-05). Got: {err_output!r}"
+    )
+    assert "→" in err_output, (
+        f"C-23: canonical format includes → source line (D-05). Got: {err_output!r}"
+    )
+    assert "Traceback" not in err_output, (
+        f"C-23: Python traceback must not appear. Got: {err_output!r}"
+    )
+    assert "ValueError" not in err_output, (
+        f"C-23: raw exception class name must not appear. Got: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-24 — exec runtime uncurated exception → gentle generic message (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c24_runtime_generic_uncurated(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-24: Uncurated exception (MemoryError) → gentle generic message, no Traceback, no class name.
+
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_memory_error(source: str, filename: str) -> str | None:
+        return 'raise MemoryError("boom")\n'
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_memory_error)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"Expected SystemExit(1), got SystemExit({exc_info.value.code})"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Traceback" not in err_output, (
+        f"C-24: Python traceback must not appear. Got: {err_output!r}"
+    )
+    assert "MemoryError" not in err_output, (
+        f"C-24: raw exception class name must not appear. Got: {err_output!r}"
+    )
+    assert ("Error on line" in err_output or "while running your program" in err_output), (
+        f"C-24: must contain canonical format or generic fallback message (D-03). Got: {err_output!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-25 — no Traceback in any runtime error path (monkeypatch style) (CLI-04) [RED]
+# ---------------------------------------------------------------------------
+
+def test_c25_runtime_error_no_traceback_subprocess(
+    existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-25: Any runtime error path must suppress Traceback and exit 1 (black-box check via monkeypatch).
+
+    Uses ZeroDivisionError as a representative runtime error.
+    [RED — will pass after Plan 04 implements _runtime_error_message]
+    """
+    import atena.cli as _cli
+    import io
+
+    def _transpile_divzero(source: str, filename: str) -> str | None:
+        return "x = 1 / 0\n"
+
+    monkeypatch.setattr(_cli, "transpile", _transpile_divzero)
+    monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
+
+    captured_stderr = io.StringIO()
+    with pytest.raises(SystemExit) as exc_info:
+        with patch("sys.stderr", captured_stderr):
+            _cli.main()
+
+    assert exc_info.value.code == 1, (
+        f"C-25: Expected returncode 1. Got: {exc_info.value.code}"
+    )
+    err_output = captured_stderr.getvalue()
+    assert "Traceback" not in err_output, (
+        f"C-25: Python traceback must not appear in any runtime error path. Got: {err_output!r}"
+    )
+    assert "ZeroDivisionError" not in err_output, (
+        f"C-25: raw exception class name must not appear. Got: {err_output!r}"
+    )
+    assert "Error on line" in err_output, (
+        f"C-25: must follow canonical format (D-05). Got: {err_output!r}"
     )
