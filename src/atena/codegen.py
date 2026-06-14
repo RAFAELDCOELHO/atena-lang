@@ -403,8 +403,12 @@ class CodeGenerator:
         if func_name in ("_atena_concat", "_atena_index"):
             self._used_helpers.add(func_name)
 
+        # GEN-04: mangle Python-keyword user-function names so the call site
+        # matches the mangled definition site (e.g. 'pass' → 'pass_').
+        # _mangle() is a no-op for non-keywords (including the _atena_* helpers
+        # and "str"), so this is safe for all branches above.
         return ast.Call(
-            func=ast.Name(id=func_name, ctx=ast.Load()),
+            func=ast.Name(id=_mangle(func_name), ctx=ast.Load()),
             args=[self._emit(a) for a in node.args],  # type: ignore[list-item]
             keywords=[],
         )

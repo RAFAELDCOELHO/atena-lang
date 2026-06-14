@@ -141,7 +141,19 @@ class SemanticAnalyzer:
         are created directly in memory and never routed through visit_Assign —
         only user-written source goes through this visitor — so the guard here
         ONLY fires for user-written names and never for injected nodes.
+
+        CR-02: dot-write form (node._dot_target is set, node.name == ""):
+        Visit the _dot_target to trigger the same undefined-base-object check
+        that the dot-READ path (visit_DotAccess → visit(target)) already
+        performs.  This eliminates the asymmetry where 'nope.grade = 10' passed
+        analysis but 'show nope.grade' correctly errored.
         """
+        # CR-02: dot-write path — validate the target object exists.
+        if getattr(node, "_dot_target", None) is not None:
+            self._visit(node._dot_target)  # type: ignore[attr-defined]
+            self._visit(node.value)
+            return "unknown"
+
         # WR-01: reject the reserved _atena_ prefix.
         if node.name.startswith("_atena_"):
             self._errors.add(
