@@ -411,6 +411,29 @@ def test_Ax_nested_subscript_independent():
 
 
 # ---------------------------------------------------------------------------
+# CR-02: add/remove validate list target (defined-before-use)
+# ---------------------------------------------------------------------------
+
+
+def test_A2_add_to_undefined_list_errors():
+    """'add 1 to mylist' where mylist is never defined produces a plain-English error."""
+    _, ec = _analyze("add 1 to mylist\n")
+    assert not ec.is_empty()
+    report = ec.report()
+    assert "mylist" in report
+    assert "Error on line 1" in report
+
+
+def test_A2_remove_from_undefined_list_errors():
+    """'remove 1 from mylist' where mylist is never defined produces a plain-English error."""
+    _, ec = _analyze("remove 1 from mylist\n")
+    assert not ec.is_empty()
+    report = ec.report()
+    assert "mylist" in report
+    assert "Error on line 1" in report
+
+
+# ---------------------------------------------------------------------------
 # CR-01: str() coercion idempotency
 # ---------------------------------------------------------------------------
 

@@ -408,11 +408,37 @@ class SemanticAnalyzer:
 
     def visit_ListAdd(self, node: ListAdd) -> str:
         self._visit(node.value)
+        self._check_list_target(node)
         return "unknown"
 
     def visit_ListRemove(self, node: ListRemove) -> str:
         self._visit(node.value)
+        self._check_list_target(node)
         return "unknown"
+
+    def _check_list_target(self, node: ListAdd | ListRemove) -> None:
+        """Validate that the list target (node.target) is defined in the current scope (CR-02).
+
+        Mirrors visit_Identifier Case 4: reports a plain-English error for
+        undefined names, with a suggest() hint, then poisons the name to
+        suppress cascade errors in the same run.
+        """
+        scope = self._locals if self._locals is not None else self._globals
+        # Name is reachable if it's in the current scope OR (inside a function)
+        # it's a known function name callable from this scope.
+        if node.target in scope:
+            return
+        if self._locals is not None and node.target in self._functions:
+            return
+
+        candidates = list(scope.keys()) + list(ATENA_KEYWORDS)
+        hint = suggest(node.target, candidates)
+        msg = f'I don\'t know a list called "{node.target}" yet. Did you forget to create it first?'
+        if hint:
+            msg = f'{msg} {hint}'
+        self._errors.add(node.line, msg, node.source_line)
+        # Poison: suppress cascade errors on subsequent references to this name.
+        scope[node.target] = "unknown"
 
     def visit_Identifier(self, node: Identifier) -> str:
         """Look up the identifier's type in the current scope.
