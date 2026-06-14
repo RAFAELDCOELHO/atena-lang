@@ -31,12 +31,12 @@ The cross-cutting spine. Established before the lexer; every phase plugs into it
 
 ### Parser
 
-- [ ] **PARSE-01**: Parser builds a Program AST from the token stream using the defined node types (Program, Assign, Show, Ask, If, While, Repeat, BinOp, UnaryOp, FunctionCall, FunctionDef, Return, ListLiteral, DictLiteral, IndexAccess, DotAccess, ListAdd, ListRemove, Identifier, NumberLiteral, StringLiteral, BoolLiteral)
-- [ ] **PARSE-02**: Parser honors the full operator-precedence ladder: `or` → `and` → `not` → comparison → `+`/`-` → `*`/`/` → unary `-` → postfix `[]`/`.`/`()`
-- [ ] **PARSE-03**: Parser parses indentation-delimited blocks (INDENT…DEDENT) for if/else, while, repeat, and function bodies, with arbitrary nesting
-- [ ] **PARSE-04**: Parser parses function definitions and `return`, function calls, list literals, dict literals, index access, dot access, and `add … to …` / `remove … from …` statements
-- [ ] **PARSE-05**: Parser recovers from a syntax error by synchronizing on the next statement boundary, so multiple syntax errors are collected in one run
-- [ ] **PARSE-06**: Parser reports plain-English errors for malformed statements (e.g. a missing parenthesis) and never loops infinitely on an error
+- [x] **PARSE-01**: Parser builds a Program AST from the token stream using the defined node types (Program, Assign, Show, Ask, If, While, Repeat, BinOp, UnaryOp, FunctionCall, FunctionDef, Return, ListLiteral, DictLiteral, IndexAccess, DotAccess, ListAdd, ListRemove, Identifier, NumberLiteral, StringLiteral, BoolLiteral)
+- [x] **PARSE-02**: Parser honors the full operator-precedence ladder: `or` → `and` → `not` → comparison → `+`/`-` → `*`/`/` → unary `-` → postfix `[]`/`.`/`()`
+- [x] **PARSE-03**: Parser parses indentation-delimited blocks (INDENT…DEDENT) for if/else, while, repeat, and function bodies, with arbitrary nesting
+- [x] **PARSE-04**: Parser parses function definitions and `return`, function calls, list literals, dict literals, index access, dot access, and `add … to …` / `remove … from …` statements
+- [x] **PARSE-05**: Parser recovers from a syntax error by synchronizing on the next statement boundary, so multiple syntax errors are collected in one run
+- [x] **PARSE-06**: Parser reports plain-English errors for malformed statements (e.g. a missing parenthesis) and never loops infinitely on an error
 
 ### Semantic Analyzer
 
@@ -132,12 +132,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LEX-06 | Phase 1 | Complete |
 | LEX-07 | Phase 1 | Complete |
 | LEX-08 | Phase 1 | Complete |
-| PARSE-01 | Phase 2 | Pending |
-| PARSE-02 | Phase 2 | Pending |
-| PARSE-03 | Phase 2 | Pending |
-| PARSE-04 | Phase 2 | Pending |
-| PARSE-05 | Phase 2 | Pending |
-| PARSE-06 | Phase 2 | Pending |
+| PARSE-01 | Phase 2 | Complete |
+| PARSE-02 | Phase 2 | Complete |
+| PARSE-03 | Phase 2 | Complete |
+| PARSE-04 | Phase 2 | Complete |
+| PARSE-05 | Phase 2 | Complete |
+| PARSE-06 | Phase 2 | Complete |
 | SEM-01 | Phase 3 | Pending |
 | SEM-02 | Phase 3 | Pending |
 | SEM-03 | Phase 3 | Pending |
