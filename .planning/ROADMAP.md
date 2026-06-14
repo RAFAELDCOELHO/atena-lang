@@ -194,7 +194,21 @@ Plans:
   4. A runtime error during `atena run` (e.g. an out-of-range index) is translated to a plain-English Atena message with the Atena line number, never a Python traceback.
   5. A missing or unreadable `.atena` file produces a friendly plain-English message, not a Python `FileNotFoundError` traceback.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — transpile() driver: four-phase wiring + between-phase error gating (CLI-01, CLI-02, CLI-03)
+
+**Wave 2** *(blocked on Wave 1 completion — plans 05-02 and 05-03 run in parallel)*
+
+- [ ] 05-02-PLAN.md — CLI run/build wiring + C-1/C-2 rewrites + C-15 through C-19 (CLI-01, CLI-02, CLI-05, CLI-06)
+- [ ] 05-03-PLAN.md — TDD RED: C-14 rewrite + C-20 through C-24 CLI-04 test stubs (all failing) (CLI-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 05-04-PLAN.md — Runtime-error translation GREEN: _runtime_error_message() + exec except-block + full suite green (CLI-03, CLI-04)
 
 ### Phase 6: Packaging & Curriculum
 
@@ -221,5 +235,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
-| 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
+| 5. CLI Runtime & Pipeline Integration | 0/4 | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
