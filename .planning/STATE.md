@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 Phase: 2
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-06-13
+Last activity: 2026-06-14 - Completed quick task 260614-a8w: guard integer scanner against non-ASCII digits
 
 Progress: [██████████] 100%
 
@@ -99,6 +99,12 @@ Two decisions deferred to phase planning (not blockers, but resolve before the p
 
 - Phase 3: the exact dynamic-vs-literal index boundary for the `_atena_index` runtime helper, and the UNKNOWN-typed-operand coercion policy (under-coerce rather than over-reject).
 - Phase 4/5: codegen strategy `ast.unparse()` (A) vs string emission (B), and the runtime-error-to-Atena-line mapping for `atena run` (`exec` vs subprocess, line markers).
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260614-a8w | fix(lexer): guard integer scanner against non-ASCII digits (CR-01) | 2026-06-14 | bee9f8f | [260614-a8w-fix-lexer-guard-integer-scanner-against-](./quick/260614-a8w-fix-lexer-guard-integer-scanner-against-/) |
 
 ## Deferred Items
 
