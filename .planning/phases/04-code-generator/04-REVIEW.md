@@ -12,7 +12,33 @@ findings:
   warning: 4
   info: 3
   total: 9
-status: issues_found
+status: warnings_only
+resolved:
+  - id: CR-01
+    resolved_at: 2026-06-14
+    fix_commit: 37b41b7
+    test_commit: d86aed9
+    note: >
+      _emit_FunctionCall now calls _mangle(func_name) on the general return
+      path. Call sites for keyword-named user functions emit the mangled name
+      matching the definition site. test_CR01_keyword_function_call_mangled
+      confirms no SyntaxError and correct execution.
+  - id: CR-02
+    resolved_at: 2026-06-14
+    fix_commit: 37b41b7
+    test_commit: d86aed9
+    note: >
+      visit_Assign detects the dot-write form (node._dot_target set) and
+      visits _dot_target via visit_DotAccess before visiting node.value.
+      This fires the same undefined-name check the dot-READ path already
+      performs. test_CR02_dot_write_undefined_object_errors confirms the
+      plain-English error; test_CR02_dot_write_defined_object_no_error
+      confirms defined-object dot-writes remain error-free.
+open_issues:
+  - WR-01 (str-builtin shadowing)
+  - WR-02 (arithmetic safety-net regression)
+  - WR-03 (GEN-05 fallback / no top-level wrap)
+  - WR-04 (parser messages for nested dot-write / == typo)
 ---
 
 # Phase 4: Code Review Report
@@ -37,6 +63,9 @@ correctness here:** none of the existing fixtures exercise the failing paths bel
 and two of them violate the project's headline invariant — "no Python traceback ever
 reaches the learner."
 
+**Update 2026-06-14:** CR-01 and CR-02 are RESOLVED (fix commit `37b41b7`,
+test commit `d86aed9`). Full suite is 251 tests, 0 failures. 4 Warnings remain open.
+
 Two BLOCKERs were proven by end-to-end execution:
 1. Keyword-named functions are mangled at the **definition** site but NOT at the
    **call** site, so any program calling a function whose name is a Python keyword
@@ -49,9 +78,9 @@ Two BLOCKERs were proven by end-to-end execution:
 
 No structural findings block was provided.
 
-## Critical Issues
+## Critical Issues (RESOLVED)
 
-### CR-01: Function-call site does not mangle Python-keyword names (definition mangles, call does not)
+### CR-01 [RESOLVED — commit 37b41b7]: Function-call site does not mangle Python-keyword names (definition mangles, call does not)
 
 **File:** `src/atena/codegen.py:407` (vs definition mangle at `:334`)
 **Issue:** `_emit_FunctionDef` mangles the function name (`name=_mangle(node.name)`,
@@ -99,7 +128,7 @@ the line-403 helper-tracking branch is unaffected. Add a targeted fixture that d
 and calls a keyword-named function (e.g. `pass`) and asserts the generated Python both
 `ast.parse`s and executes.
 
-### CR-02: Dot-write to an undefined object passes analysis, emits code that crashes at runtime
+### CR-02 [RESOLVED — commit 37b41b7]: Dot-write to an undefined object passes analysis, emits code that crashes at runtime
 
 **File:** `src/atena/parser.py:670-714` (`_parse_dot_assignment`) +
 `src/atena/analyzer.py:128-174` (`visit_Assign`)
