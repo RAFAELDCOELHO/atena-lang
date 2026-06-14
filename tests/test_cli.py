@@ -388,6 +388,132 @@ def test_c13_build_unwritable_output_plain_english_error(
 
 
 # ---------------------------------------------------------------------------
+# C-15 — atena run prints program output (CLI-01)
+# ---------------------------------------------------------------------------
+
+def test_c15_run_prints_program_output(tmp_path: Path) -> None:
+    """C-15: 'atena run' with 'show 42' program exits 0 and '42' is in stdout."""
+    f = tmp_path / "c15.atena"
+    f.write_text("show 42\n")
+    result = run_cli("run", str(f))
+    assert result.returncode == 0, (
+        f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
+    )
+    assert "42" in result.stdout, (
+        f"Expected '42' in stdout. Got: {result.stdout!r}"
+    )
+    assert "Traceback" not in result.stdout + result.stderr, (
+        f"Python traceback must not appear: {result.stdout + result.stderr!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-16 — atena build emits .py file on disk (CLI-02)
+# ---------------------------------------------------------------------------
+
+def test_c16_build_emits_py_file(tmp_path: Path) -> None:
+    """C-16: 'atena build' with 'show 1' program exits 0, prog.py exists, and contains 'print'."""
+    f = tmp_path / "prog.atena"
+    f.write_text("show 1\n")
+    result = run_cli("build", str(f))
+    assert result.returncode == 0, (
+        f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
+    )
+    py_file = tmp_path / "prog.py"
+    assert py_file.exists(), (
+        f"Expected prog.py to be created at {py_file}"
+    )
+    assert "print" in py_file.read_text(), (
+        f"Expected 'print' in generated prog.py. Got: {py_file.read_text()!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-17 — transpile errors → exit 1, plain-English, no Traceback (CLI-03, run verb)
+# ---------------------------------------------------------------------------
+
+def test_c17_transpile_errors_exit_nonzero_run(tmp_path: Path) -> None:
+    """C-17: atena run with unterminated string exits 1 and 'Error on line' appears."""
+    f = tmp_path / "bad.atena"
+    f.write_text('show "\n')  # unterminated string → lexer error
+    result = run_cli("run", str(f))
+    assert result.returncode == 1, (
+        f"Expected exit 1, got {result.returncode}"
+    )
+    combined = result.stdout + result.stderr
+    assert "Error on line" in combined, (
+        f"Expected 'Error on line' in output. Got: {combined!r}"
+    )
+    assert "Traceback" not in combined, (
+        f"Python traceback must not appear. Got: {combined!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-17b — transpile errors → exit 1, plain-English, no Traceback (CLI-03, build verb)
+# ---------------------------------------------------------------------------
+
+def test_c17b_transpile_errors_exit_nonzero_build(tmp_path: Path) -> None:
+    """C-17b: atena build with unterminated string exits 1 and 'Error on line' appears."""
+    f = tmp_path / "bad.atena"
+    f.write_text('show "\n')  # unterminated string → lexer error
+    result = run_cli("build", str(f))
+    assert result.returncode == 1, (
+        f"Expected exit 1, got {result.returncode}"
+    )
+    combined = result.stdout + result.stderr
+    assert "Error on line" in combined, (
+        f"Expected 'Error on line' in output. Got: {combined!r}"
+    )
+    assert "Traceback" not in combined, (
+        f"Python traceback must not appear. Got: {combined!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-18 — school.atena smoke test (ROADMAP criterion #1)
+# ---------------------------------------------------------------------------
+
+def test_c18_school_atena_smoke() -> None:
+    """C-18: atena run examples/school.atena with canned stdin 'Ana' exits 0 and prints 'Welcome, Ana'."""
+    result = subprocess.run(
+        [sys.executable, "-m", "atena", "run", "examples/school.atena"],
+        capture_output=True,
+        text=True,
+        input="Ana\n",
+    )
+    assert result.returncode == 0, (
+        f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
+    )
+    assert "Welcome, Ana" in result.stdout, (
+        f"Expected 'Welcome, Ana' in stdout. Got: {result.stdout!r}"
+    )
+    assert "Traceback" not in result.stdout + result.stderr, (
+        f"Python traceback must not appear. Got: {result.stdout + result.stderr!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# C-19 — atena build --show prints generated Python to stdout (CLI-06)
+# ---------------------------------------------------------------------------
+
+def test_c19_build_show_flag(tmp_path: Path) -> None:
+    """C-19: 'atena build --show' with 'show 1' exits 0 and stdout contains 'print'."""
+    f = tmp_path / "prog.atena"
+    f.write_text("show 1\n")
+    result = run_cli("build", "--show", str(f))
+    assert result.returncode == 0, (
+        f"Expected exit 0, got {result.returncode}. stderr: {result.stderr!r}"
+    )
+    assert "print" in result.stdout, (
+        f"Expected 'print' in stdout (generated Python). Got: {result.stdout!r}"
+    )
+    assert "Traceback" not in result.stdout + result.stderr, (
+        f"Python traceback must not appear. Got: {result.stdout + result.stderr!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # C-14 — exec runtime error → plain-English message, exit 1, no traceback (CR-01)
 # ---------------------------------------------------------------------------
 
