@@ -487,6 +487,11 @@ class Lexer:
         for line_index, raw_line in enumerate(self._lines):
             self._line = line_index + 1
 
+            # Reset brace depth per logical line: brace literals never span lines
+            # in v1.0, so an unclosed '{' must not leak depth forward and silently
+            # suppress the colon off-ramp on later lines (WR-02).
+            self._brace_depth = 0
+
             # Skip blank lines and comment-only lines before touching the stack.
             stripped = raw_line.lstrip()
             if not stripped or stripped.startswith('#'):

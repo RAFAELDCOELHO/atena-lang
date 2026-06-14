@@ -380,3 +380,22 @@ def test_Lx_crlf_and_cr_line_endings():
     # The full token stream (types, values, and positions) matches the LF version exactly.
     assert crlf_tokens == lf_tokens
     assert cr_tokens == lf_tokens
+
+
+def test_Lx_stray_brace_does_not_suppress_later_colon_offramp():
+    """An unclosed '{' on one line must not disable the colon off-ramp later (WR-02).
+
+    _brace_depth is reset per logical line (braces never span lines in v1.0), so a stray
+    '{' on line 1 cannot leak depth forward and silently swallow a colon on line 2.
+    """
+    _, ec = _lex('x = {1\nif y > 1:\n')
+    report = ec.report()
+    # The colon on line 2 is still reported as an off-ramp, pinned to line 2.
+    assert "colons" in report
+    assert "Error on line 2" in report
+
+
+def test_Lx_balanced_dict_colon_not_offramp():
+    """A balanced {"k": 1} on one line still does NOT trigger the colon off-ramp (WR-02 guard)."""
+    _, ec = _lex('x = {"k": 1}\n')
+    assert "colons" not in ec.report()
