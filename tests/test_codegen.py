@@ -506,3 +506,154 @@ def test_G2_nested_repeat_executes_correct_count():
     assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
     assert result.stdout.strip() == "6"
 
+# ---------------------------------------------------------------------------
+# Plan 04-04: Task 2 — Helper body execution tests + verbatim-emission tests
+# ---------------------------------------------------------------------------
+
+
+def test_G2_atena_index_helper_blocks_zero():
+    """_atena_index(0) raises an IndexError with the plain-English message at runtime.
+
+    Source uses i=0 (dynamic index), which routes through _atena_index at runtime.
+    At i=0, the helper raises IndexError('List positions in Atena start at 1.').
+    """
+    source = "i = 0\ngradeslist = [5, 7, 9]\nshow gradeslist[i]\n"
+    python_src = _generate(source)
+    assert "_atena_index" in python_src, (
+        f"Expected _atena_index helper in generated output.\nGot:\n{python_src}"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    # Must exit non-zero (raised IndexError)
+    assert result.returncode != 0, (
+        f"Expected non-zero exit when index=0, but got:\nstdout: {result.stdout}\n"
+        f"stderr: {result.stderr}"
+    )
+    assert "List positions" in result.stderr, (
+        f"Expected 'List positions in Atena start at 1.' in stderr.\n"
+        f"Got stderr:\n{result.stderr}"
+    )
+
+
+def test_G2_atena_index_helper_valid():
+    """_atena_index(1) returns 0 — valid 1-based index maps to Python index 0.
+
+    Source uses i=1 (dynamic index); gradeslist[1] → Python index 0 → value 5.
+    """
+    source = "i = 1\ngradeslist = [5, 7, 9]\nshow gradeslist[i]\n"
+    python_src = _generate(source)
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "5"
+
+
+def test_G2_atena_concat_helper_string_result():
+    """_atena_concat(3, 5) returns '35' (string concatenation, not numeric addition).
+
+    Inside a function body, parameters 'a' and 'b' have unknown type, so
+    'a + b' is routed through _atena_concat.  _atena_concat returns
+    str(a) + str(b), so join(3, 5) produces '35', not 8.
+    This confirms the _atena_concat helper correctly concatenates as strings.
+    """
+    source = "function join(a, b)\n    return a + b\nshow join(3, 5)\n"
+    python_src = _generate(source)
+    assert "_atena_concat" in python_src, (
+        f"Expected _atena_concat helper in generated output.\nGot:\n{python_src}"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "35"
+
+
+def test_G3_verbatim_no_str_wrap_number_plus_number():
+    """Number + number BinOp emits 'x + y' verbatim — no str() wrapping.
+
+    Analyzer assigns both x and y the 'number' type (from literal assignments),
+    so the BinOp uses no_coerce.  Codegen must emit 'x + y', NOT 'str(x) + y'.
+    """
+    source = "x = 5\ny = 3\nshow x + y\n"
+    result = _generate(source)
+    assert "str(x)" not in result, (
+        f"'str(x)' should NOT appear in generated output (verbatim no-coerce).\n"
+        f"Got:\n{result}"
+    )
+    assert "str(y)" not in result, (
+        f"'str(y)' should NOT appear in generated output (verbatim no-coerce).\n"
+        f"Got:\n{result}"
+    )
+    assert "x + y" in result, (
+        f"Expected 'x + y' (verbatim BinOp) in generated output.\nGot:\n{result}"
+    )
+    python_result = subprocess.run(
+        [sys.executable, "-c", result],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert python_result.returncode == 0, f"Generated Python crashed:\n{python_result.stderr}"
+    assert python_result.stdout.strip() == "8"
+
+
+def test_G3_verbatim_no_double_shift():
+    """Literal index 2 (Atena) is folded to 1 by analyzer — codegen emits [1] verbatim.
+
+    After analyzer folds index 2→1, codegen must emit 'grades[1]', NOT 'grades[0]'
+    (which would be a double-shift) and NOT 'grades[2]' (which would re-emit the
+    original unfolded index).  grades[1] in Python is the second element, value 7.
+    """
+    source = "grades = [5, 7, 9]\nshow grades[2]\n"
+    result = _generate(source)
+    assert "grades[1]" in result, (
+        f"Expected 'grades[1]' (verbatim folded index) in output.\nGot:\n{result}"
+    )
+    assert "grades[0]" not in result, (
+        f"'grades[0]' must NOT appear — that would be a double-shift.\nGot:\n{result}"
+    )
+    assert "grades[2]" not in result, (
+        f"'grades[2]' must NOT appear — should have been folded by analyzer.\nGot:\n{result}"
+    )
+    python_result = subprocess.run(
+        [sys.executable, "-c", result],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert python_result.returncode == 0, f"Generated Python crashed:\n{python_result.stderr}"
+    assert python_result.stdout.strip() == "7"
+
+
+def test_G3_verbatim_nested_index_no_double_shift():
+    """Nested literal index: grid[1][2] (Atena) → grid[0][1] in Python (no double-shift).
+
+    Analyzer folds outer index 1→0 and inner index 2→1.  Codegen must emit
+    'grid[0][1]' verbatim — both indices shifted exactly once.
+    grid[0][1] = second element of first sublist = 2.
+    """
+    source = "grid = [[1, 2], [3, 4]]\nshow grid[1][2]\n"
+    result = _generate(source)
+    assert "grid[0][1]" in result, (
+        f"Expected 'grid[0][1]' (both indices folded once, verbatim) in output.\n"
+        f"Got:\n{result}"
+    )
+    python_result = subprocess.run(
+        [sys.executable, "-c", result],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert python_result.returncode == 0, f"Generated Python crashed:\n{python_result.stderr}"
+    assert python_result.stdout.strip() == "2"
