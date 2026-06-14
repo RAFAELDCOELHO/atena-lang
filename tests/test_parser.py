@@ -408,6 +408,50 @@ def test_P1_length():
     assert val.args[0].name == "items"
 
 
+def test_P1_length_over_index():
+    """'x = length items[0]' → length of items[0], not (length items)[0] (WR-03).
+
+    The natural reading "the length of items[0]" must hold: 'length' takes the
+    full postfix chain of its operand, so the result is
+    FunctionCall('length', [IndexAccess(Identifier('items'), NumberLiteral(0))]).
+    The buggy alternative — IndexAccess over FunctionCall('length', [items]) —
+    would mean len(items)[0], the opposite of the learner's intent.
+    """
+    program, ec = _parse("x = length items[0]\n")
+    assert ec.is_empty()
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    val = stmt.value
+    # Top node is the length call, NOT an IndexAccess.
+    assert isinstance(val, FunctionCall)
+    assert val.name == "length"
+    assert len(val.args) == 1
+    arg = val.args[0]
+    assert isinstance(arg, IndexAccess)
+    assert isinstance(arg.target, Identifier)
+    assert arg.target.name == "items"
+    assert isinstance(arg.index, NumberLiteral)
+    assert arg.index.value == 0
+    assert arg.index_converted is False
+
+
+def test_P1_length_over_dot():
+    """'x = length student.grades' → len(student.grades), not len(student).grades (WR-03)."""
+    program, ec = _parse("x = length student.grades\n")
+    assert ec.is_empty()
+    stmt = program.statements[0]
+    assert isinstance(stmt, Assign)
+    val = stmt.value
+    assert isinstance(val, FunctionCall)
+    assert val.name == "length"
+    assert len(val.args) == 1
+    arg = val.args[0]
+    assert isinstance(arg, DotAccess)
+    assert isinstance(arg.target, Identifier)
+    assert arg.target.name == "student"
+    assert arg.name == "grades"
+
+
 def test_P1_if_no_else():
     """'if x > 1\\n    show x\\n' → If(condition=BinOp('>'), then_body=[Show(...)], else_body=[])."""
     program, ec = _parse("if x > 1\n    show x\n")

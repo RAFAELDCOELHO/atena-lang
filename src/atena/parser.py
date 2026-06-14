@@ -341,10 +341,14 @@ class Parser:
             return BoolLiteral(value=False, line=tok.line, source_line=tok.source_line)
 
         if tok.type == TokenType.KEYWORD and tok.value == "length":
-            # 'length' is a prefix keyword: consumes only the immediately following primary.
+            # 'length' is a prefix keyword. It takes the full postfix chain of the
+            # following operand so the natural reading holds: 'length items[0]' is
+            # "the length of items[0]" (FunctionCall over IndexAccess), not the
+            # silent mis-parse len(items)[0]. Likewise 'length student.grades' is
+            # len(student.grades), not len(student).grades (WR-03).
             # Maps to FunctionCall(name="length", args=[operand]) for codegen → len().
             self._advance()
-            operand = self._parse_primary()   # length binds tightest — only immediate primary
+            operand = self._parse_postfix(self._parse_primary())
             return FunctionCall(
                 name="length",
                 args=[operand],
