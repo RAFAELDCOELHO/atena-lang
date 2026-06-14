@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 0: Diagnostics Spine & Data Contracts** - Shared ErrorCollector, exact error format, position-bearing Token/AST contracts, stub CLI (completed 2026-06-13)
 - [x] **Phase 1: Lexer** - Source → balanced token stream with INDENT/DEDENT, blank/comment skipping, tab-space policy (completed 2026-06-13)
 - [x] **Phase 2: Parser** - Token stream → AST honoring the precedence ladder, with syntax-error recovery (completed 2026-06-14)
-- [ ] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision
+- [x] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision (completed 2026-06-14)
 - [ ] **Phase 4: Code Generator** - Analyzed AST → valid, runnable Python 3, emitted verbatim, with `ast.parse()` self-check
 - [ ] **Phase 5: CLI Runtime & Pipeline Integration** - `atena run` / `atena build` wired end-to-end with plain-English runtime errors
 - [ ] **Phase 6: Packaging & Curriculum** - Pip-installable entry point, concept-ladder examples, getting-started README
@@ -143,7 +143,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-03-PLAN.md — Scope + arity: visit_Assign/Ask registration, visit_Identifier undefined detection + poisoning + D-08 outer-var message, visit_FunctionDef push/pop, visit_FunctionCall no-hoist + arity (SEM-06..SEM-07 GREEN — all tests GREEN)
+- [x] 03-03-PLAN.md — Scope + arity: visit_Assign/Ask registration, visit_Identifier undefined detection + poisoning + D-08 outer-var message, visit_FunctionDef push/pop, visit_FunctionCall no-hoist + arity (SEM-06..SEM-07 GREEN — all tests GREEN)
 
 ### Phase 4: Code Generator
 
@@ -198,7 +198,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
-| 3. Semantic Analyzer | 2/3 | In Progress|  |
+| 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |

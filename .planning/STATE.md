@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-01 SemanticAnalyzer TDD RED scaffold
-last_updated: "2026-06-14T17:25:05.501Z"
+status: verifying
+stopped_at: Completed 03-03 scope and arity layer — Phase 3 all GREEN (27/27 analyzer tests, 189/189 total)
+last_updated: "2026-06-14T17:34:02.070Z"
 last_activity: 2026-06-14
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 43
+  completed_plans: 16
+  percent: 57
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 Phase: 03 (semantic-analyzer) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-14
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 94%
 | Phase 02-parser P05 | 8 | 1 tasks | 1 files |
 | Phase 03-semantic-analyzer P01 | 5 | 2 tasks | 2 files |
 | Phase 03-semantic-analyzer P02 | 5 | 3 tasks | 1 files |
+| Phase 03-semantic-analyzer P03 | 4 | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase ?]: 03-01-SUMMARY.md
 - [Phase ?]: [03-02]: BinOp converted in-place to FunctionCall via __class__ reassignment for _atena_concat
 - [Phase ?]: [03-02]: Basic symbol tracking in visit_Assign/visit_Identifier implemented in Plan 02 (required by chain coercion tests, not deferred to Plan 03)
+- [03-03]: visit_Ask registers node.target → "str" in active scope (D-03: ask always returns text from Python input())
+- [03-03]: visit_FunctionDef registers name BEFORE body visit — self-recursion works; no forward-call hoisting for external functions (D-09)
+- [03-03]: Two-level scope via try/finally in visit_FunctionDef — scope never leaks between functions even on internal errors (T-03-07)
+- [03-03]: Phase 3 complete — all 27 analyzer tests GREEN, full 189-test suite passing, SEM-01..SEM-07 satisfied
 
 ### Pending Todos
 
@@ -137,6 +142,6 @@ Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: n
 
 ## Session Continuity
 
-Last session: 2026-06-14T17:25:05.497Z
-Stopped at: Completed 03-01 SemanticAnalyzer TDD RED scaffold
+Last session: 2026-06-14T17:34:02.064Z
+Stopped at: Completed 03-03 scope and arity layer — Phase 3 all GREEN (27/27 analyzer tests, 189/189 total)
 Resume file: None
