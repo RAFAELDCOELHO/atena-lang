@@ -1,0 +1,5 @@
+student = {name = "temp", grade = 0}
+student.name = "Ana"
+student.grade = 9
+show student.name
+show student.grade
