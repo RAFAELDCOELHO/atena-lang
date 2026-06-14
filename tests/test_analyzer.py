@@ -408,3 +408,40 @@ def test_Ax_nested_subscript_independent():
     assert inner_access.index_converted is True
     assert isinstance(inner_access.index, NumberLiteral)
     assert inner_access.index.value == 1   # 2→1 rewrite
+
+
+# ---------------------------------------------------------------------------
+# CR-01: str() coercion idempotency
+# ---------------------------------------------------------------------------
+
+
+def test_Ax_coercion_idempotent():
+    """Re-analyzing a 'str + number' program must NOT corrupt the AST.
+
+    After the first pass 'x = "a" + 1' becomes BinOp(left=StringLiteral, right=FunctionCall("str")).
+    A second analyze() on the same program must leave the tree unchanged
+    (no double-wrap, no conversion to _atena_concat).
+    """
+    source = 'x = "a" + 1\n'
+    program, ec = _analyze(source)
+    assert ec.is_empty()
+    binop = program.statements[0].value
+    assert isinstance(binop, BinOp)
+    assert isinstance(binop.right, FunctionCall)
+    assert binop.right.name == "str"
+
+    # Re-analyze the same program object — must NOT change tree shape
+    ec2 = ErrorCollector()
+    SemanticAnalyzer(program, ec2).analyze()
+    assert ec2.is_empty()
+    # Tree shape must be unchanged: still a BinOp (not FunctionCall("_atena_concat"))
+    binop_again = program.statements[0].value
+    assert isinstance(binop_again, BinOp), (
+        "Second analyze pass corrupted AST: BinOp was converted to FunctionCall"
+    )
+    assert isinstance(binop_again.right, FunctionCall)
+    assert binop_again.right.name == "str"
+    # Must NOT have been double-wrapped
+    assert not isinstance(binop_again.right.args[0], FunctionCall), (
+        "Second analyze pass double-wrapped the right operand"
+    )

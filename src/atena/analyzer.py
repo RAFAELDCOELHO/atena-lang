@@ -253,6 +253,10 @@ class SemanticAnalyzer:
             In-place node class mutation (node.__class__ = FunctionCall) keeps
             the same object reference visible to all callers (e.g., assign.value)
             without needing parent context.
+
+        Idempotency guard (CR-01): _coerced is set to True after any coercion
+        rewrite (coerce_right, coerce_left) so a second analyze pass is a no-op.
+        Mirrors the IndexAccess.index_converted pattern.
         """
         left_type = self._visit(node.left)
         right_type = self._visit(node.right)
@@ -260,6 +264,14 @@ class SemanticAnalyzer:
         if node.op != "+":
             # Non-+ operators: no static type-checking in v1.0 (D-04).
             return "unknown"
+
+        # Idempotency guard (CR-01): if this BinOp was already coerced on a
+        # previous pass, treat the injected str() operand as "str" so the
+        # table lookup takes the no-coerce branch and we skip the mutation.
+        if getattr(node, "_coerced", False):
+            # Node was previously coerced — operands are already in final form.
+            # Re-derive the combined type (str + str → "str") without mutating.
+            return "str"
 
         # Short-circuit: if either side is unknown, route through runtime helper (D-02).
         if left_type == "unknown" or right_type == "unknown":
@@ -270,6 +282,10 @@ class SemanticAnalyzer:
             node.__class__ = FunctionCall  # type: ignore[assignment]
             node.name = "_atena_concat"  # type: ignore[attr-defined]
             node.args = [orig_left, orig_right]  # type: ignore[attr-defined]
+            # Remove stale BinOp fields to avoid ghost attributes (WR-03).
+            for _stale in ("op", "left", "right"):
+                if hasattr(node, _stale):
+                    delattr(node, _stale)
             return "unknown"
 
         # Both types known — consult the coercion table.
@@ -292,6 +308,7 @@ class SemanticAnalyzer:
                 line=node.right.line,
                 source_line=node.right.source_line,
             )
+            node._coerced = True  # type: ignore[attr-defined]  # idempotency guard (CR-01)
             return "str"
 
         if outcome == "coerce_left":
@@ -302,6 +319,7 @@ class SemanticAnalyzer:
                 line=node.left.line,
                 source_line=node.left.source_line,
             )
+            node._coerced = True  # type: ignore[attr-defined]  # idempotency guard (CR-01)
             return "str"
 
         # outcome == "no_coerce": both sides same type, no wrapping needed.
