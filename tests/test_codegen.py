@@ -276,3 +276,56 @@ def test_Gx_on_demand_helpers_absent_when_unused():
     assert "_atena_concat" not in result, (
         f"_atena_concat helper should not be emitted for a program that doesn't use it"
     )
+
+
+# ---------------------------------------------------------------------------
+# Task 1 tests: list/dict/index/dot/listop execution tests (G2_*)
+# ---------------------------------------------------------------------------
+
+
+def test_G2_index_access_executes_verbatim():
+    """grades[1] (Atena) runs as grades[0] in Python (no double-shift).
+
+    The analyzer rewrites literal index 1 → 0; codegen emits [0] verbatim.
+    Result: grades[0] prints 5 (first element).
+    """
+    python_src = _generate("grades = [5, 7, 9]\nshow grades[1]\n")
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "5"
+
+
+def test_G2_dict_dot_read_executes():
+    """student.name (dict dot-read) emits student["name"] and runs correctly."""
+    python_src = _generate('student = {name = "Ana"}\nshow student.name\n')
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "Ana"
+
+
+def test_G2_list_add_remove_executes():
+    """add/remove/length list operations execute correctly.
+
+    Start with [1], add 2 → [1, 2], remove 1 → [2], length → 1.
+    """
+    python_src = _generate(
+        "grades = [1]\nadd 2 to grades\nremove 1 from grades\nshow length grades\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "1"

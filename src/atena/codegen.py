@@ -371,11 +371,24 @@ class CodeGenerator:
         """name(args)  ->  ast.Call
 
         Tracks helper usage for on-demand preamble emission.
-        Special case: name == "str" emitted verbatim (coercion injected by analyzer).
+        Special cases:
+          - "length" → len(...) (Atena keyword maps to Python builtin)
+          - "str" → str(...) (coercion injected by analyzer, emitted verbatim)
+          - "_atena_concat"/"_atena_index" → add to _used_helpers, then emit normally
         """
         func_name = node.name
+
+        # Atena "length" keyword → Python "len" builtin (GEN-02 mapping)
+        if func_name == "length":
+            return ast.Call(
+                func=ast.Name(id="len", ctx=ast.Load()),
+                args=[self._emit(a) for a in node.args],  # type: ignore[list-item]
+                keywords=[],
+            )
+
         if func_name in ("_atena_concat", "_atena_index"):
             self._used_helpers.add(func_name)
+
         return ast.Call(
             func=ast.Name(id=func_name, ctx=ast.Load()),
             args=[self._emit(a) for a in node.args],  # type: ignore[list-item]
