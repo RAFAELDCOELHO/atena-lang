@@ -130,7 +130,20 @@ Plans:
   4. Using an undefined variable produces a plain-English error naming it (e.g. `I don't know what "xyz" is.`), and the symbol is poisoned so later uses don't re-report — one mistake yields one error.
   5. Calling a function before it is defined (no hoisting) errors at analysis time, and a call with the wrong number of arguments errors with a human-terms arity message (e.g. `"greet" expects 1 value, but you gave 2.`).
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1** *(TDD RED gate — must run first)*
+
+- [ ] 03-01-PLAN.md — TDD RED: SemanticAnalyzer skeleton + all 25+ test_analyzer.py stubs (imports succeed, all tests fail)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Expression semantics: _COERCE_TABLE, type inference, str() coercion injection, _atena_concat routing, 1→0 index rewrite, literal-bounds errors, _atena_index helper (SEM-01..SEM-05 GREEN)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — Scope + arity: visit_Assign/Ask registration, visit_Identifier undefined detection + poisoning + D-08 outer-var message, visit_FunctionDef push/pop, visit_FunctionCall no-hoist + arity (SEM-06..SEM-07 GREEN — all tests GREEN)
 
 ### Phase 4: Code Generator
 
@@ -185,7 +198,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 0. Diagnostics Spine & Data Contracts | 5/5 | Complete   | 2026-06-13 |
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
-| 3. Semantic Analyzer | 0/TBD | Not started | - |
+| 3. Semantic Analyzer | 0/3 | Not started | - |
 | 4. Code Generator | 0/TBD | Not started | - |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
