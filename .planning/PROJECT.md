@@ -14,11 +14,11 @@ A complete non-programmer can write real algorithmic logic (functions, control f
 
 - [x] Diagnostics spine & data contracts (DIAG-01..DIAG-06) — *Validated in Phase 0.* Shared `ErrorCollector` with the canonical `Error on line {N}: {msg} → {source}` format, errors collected/sorted/deduped/capped across a run, "Did you mean…?" suggestions, position-bearing `Token`/AST dataclasses, and a stub CLI whose internal-error fallback guarantees no Python traceback ever reaches the learner. (The format and collect-across-run behavior are *established* here and *exercised* by every later phase.)
 - [x] Lexer (LEX-01..LEX-08) — *Validated in Phase 1.* Single-pass character scanner + off-side-rule indentation engine producing a balanced INDENT/DEDENT/NEWLINE token stream drained at EOF; blank/comment-line skipping with zero stack side-effects; uniform-step validation with plain-English errors (mixed tabs/spaces, staircase-dedent, over-indent, ragged-width); maximal-munch `=`/`==`, all operators/comparisons, the 19-keyword set, double-quoted strings, integers; teaching off-ramps (decimal, single-quote, colon, semicolon) and unterminated-string/unexpected-char errors — all routed through `ErrorCollector`, never a Python exception. 29 lexer tests green, 87/87 total.
+- [x] Parser (PARSE-01..PARSE-06) — *Validated in Phase 2.* Hand-rolled recursive-descent + Pratt expression parser turning the token stream into a complete `Program` AST: full operator-precedence ladder (`or`→`and`→`not`→comparison→`+`/`-`→`*`/`/`→unary `-`→postfix `[]`/`.`/`()`), indentation-delimited blocks (INDENT…DEDENT) for if/else, while, repeat, and function bodies with arbitrary nesting, and collect-all-errors recovery — every error plain-English through `ErrorCollector`, never a Python exception. 59 parser tests green.
+- [x] Semantic analyzer (SEM-01..SEM-07) — *Validated in Phase 3.* In-place AST enrichment with every semantic decision the generator emits verbatim: `str()` coercion injection for `string + number`/`string + boolean` (idempotent, `_atena_concat` routing for unknown-typed operands) with plain-English "I can't add…" errors for disallowed combos; 1→0 index rewrite (literal fold + `_atena_index` helper for dynamic indices) with distinct errors for index-0 and negative indices; undefined-variable detection with poison-suppression, "Did you mean…?" hints and the D-08 "pass it as a parameter" teaching message; two-level scope with pure-function isolation; defined-before-called + exact-arity enforcement. 38 analyzer tests green, 200/200 total.
 
 ### Active
 
-- [ ] Parser builds a complete AST from the token stream honoring the defined operator precedence
-- [ ] Semantic analyzer injects type coercion (`str()` wrapping), converts 1-indexed access to 0-indexed, and detects undefined variables and function arity errors
 - [ ] Code generator emits valid, runnable Python 3 from the analyzed AST
 - [ ] All plain-English errors follow the `Error on line {N}: ... → {source}` format with no stack traces or jargon
 - [ ] Errors are collected across a run (error recovery), not halted at the first one
@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-14 — Phase 2 (Parser) complete: token stream → complete Program AST with Pratt precedence ladder, indentation-delimited blocks, and collect-all-errors recovery (59 parser tests green).*
+*Last updated: 2026-06-14 — Phase 3 (Semantic Analyzer) complete: AST enriched in place with every semantic decision — str() coercion injection, 1→0 index rewrite, undefined/scope/arity checks — all plain-English, no traceback leaks (38 analyzer tests green, 200/200 total; code review's 2 critical + 6 warning findings resolved under TDD).*
