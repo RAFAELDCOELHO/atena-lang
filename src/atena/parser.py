@@ -178,6 +178,33 @@ class Parser:
                 return
             self._advance()
 
+    def _skip_orphaned_block(self) -> None:
+        """Consume a balanced INDENT … DEDENT block left over from an errored header.
+
+        When an erroneous statement header (e.g. a stray 'else') is followed by an
+        indented block, synchronize lands the cursor on the orphaned INDENT. There
+        is no statement to parse there — reporting on it would emit a meaningless
+        'I didn't expect "" here' (INDENT's value is the empty string). Instead we
+        swallow the whole block silently so a single mistake yields a single error
+        (WR-02).
+
+        Progress invariant: the opening INDENT is always consumed first, so this
+        always advances >= 1 token. Nested INDENT/DEDENT pairs are tracked by depth.
+        A missing DEDENT (truly malformed input / EOF inside the block) terminates
+        the loop at EOF rather than hanging.
+        """
+        if not self._check(TokenType.INDENT):
+            return
+        self._advance()            # consume the opening INDENT (guarantees progress)
+        depth = 1
+        while depth > 0 and not self._at_end():
+            tok = self._current()
+            if tok.type == TokenType.INDENT:
+                depth += 1
+            elif tok.type == TokenType.DEDENT:
+                depth -= 1
+            self._advance()
+
     def _parse_statement(self) -> Node | None:
         """Parse one statement; catch _ParseError and synchronize on error.
 
@@ -687,6 +714,13 @@ class Parser:
             return None
         # At EOF — terminate cleanly
         if self._at_end():
+            return None
+        # An orphaned INDENT at statement position means the previous header
+        # errored and synchronize left us on its now-headerless block. Skip the
+        # whole block silently rather than emitting a meaningless `""` diagnostic
+        # on the INDENT token — one bad header should yield one error (WR-02).
+        if self._check(TokenType.INDENT):
+            self._skip_orphaned_block()
             return None
 
         tok = self._current()

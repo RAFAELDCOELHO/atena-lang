@@ -759,6 +759,48 @@ def test_P2_two_comparisons_joined_by_and_ok():
     assert val.op == "and"
 
 
+def test_P2_stray_else_with_block_single_error():
+    """A stray 'else' followed by an indented block yields exactly ONE error (WR-02).
+
+    The orphaned INDENT block must be skipped silently rather than producing a
+    cascaded second error. Critically, no diagnostic may have an empty token
+    value ('I didn't expect "" here') — that is the opaque output Atena forbids.
+    """
+    program, ec = _parse("else\n    show x\n")
+    assert not ec.is_empty()
+    report = ec.report()
+    # Exactly one error — the stray 'else'; the block is swallowed.
+    assert report.count("Error on line") == 1
+    assert 'I didn\'t expect "else" here' in report
+    # No meaningless empty-value message pointing at the orphaned INDENT.
+    assert 'expect "" here' not in report
+    # Nothing leaks into the program for a fully-bad header+block.
+    assert program.statements == []
+
+
+def test_P2_unknown_header_with_block_single_error():
+    """An unknown header ('notakeyword') with a block yields exactly one error (WR-02)."""
+    _, ec = _parse("notakeyword\n    show x\n")
+    assert not ec.is_empty()
+    report = ec.report()
+    assert report.count("Error on line") == 1
+    assert 'expect "" here' not in report
+
+
+def test_P2_second_else_after_complete_if_else_single_error():
+    """A second 'else' after a complete if/else errors once; the valid If is kept (WR-02)."""
+    program, ec = _parse(
+        "if x > 1\n    show x\nelse\n    show 0\nelse\n    show 9\n"
+    )
+    assert not ec.is_empty()
+    report = ec.report()
+    assert report.count("Error on line") == 1
+    assert 'expect "" here' not in report
+    # The first, complete if/else still parses into the program.
+    assert len(program.statements) == 1
+    assert isinstance(program.statements[0], If)
+
+
 # ---------------------------------------------------------------------------
 # Layer 3 — Cross-requirement tests (progress invariant, multi-error collection)
 # ---------------------------------------------------------------------------
