@@ -622,3 +622,51 @@ def test_Ax_coercion_idempotent():
     assert not isinstance(binop_again.right.args[0], FunctionCall), (
         "Second analyze pass double-wrapped the right operand"
     )
+
+
+# ---------------------------------------------------------------------------
+# CR-02: Dot-write to an undefined object must produce a plain-English error
+# ---------------------------------------------------------------------------
+
+
+def test_CR02_dot_write_undefined_object_errors():
+    """CR-02: 'nope.grade = 10' where 'nope' is never defined must produce an error.
+
+    Previously the analyzer's visit_Assign never validated the _dot_target, so
+    an undefined base object silently passed analysis and emitted
+    'nope["grade"] = 10' — a NameError at runtime for the learner.
+
+    After the fix visit_Assign delegates to visit_DotAccess for the _dot_target,
+    which visits the base identifier and fires the same 'I don't know what X is
+    yet' error the dot-READ path produces.
+    """
+    _, ec = _analyze("nope.grade = 10\n")
+
+    assert not ec.is_empty(), (
+        "CR-02: 'nope.grade = 10' (undefined base) should produce an analyzer error, "
+        "but ec.is_empty() is True — the undefined 'nope' was not caught."
+    )
+    report = ec.report()
+    # Must mention the undefined name
+    assert "nope" in report, (
+        f"CR-02: expected 'nope' in the error report.\nGot:\n{report}"
+    )
+    # Must be the plain-English 'I don't know what X is' message (not a Python traceback)
+    assert "don't know" in report or "do not know" in report or "undefined" in report.lower(), (
+        f"CR-02: expected a plain-English undefined-name message.\nGot:\n{report}"
+    )
+
+
+def test_CR02_dot_write_defined_object_no_error():
+    """CR-02: dot-write to a DEFINED object must still produce no error.
+
+    'student = {grade = 0}\\nstudent.grade = 10\\n' — student is defined before
+    the dot-write, so no error should be reported and the result should be a valid
+    assignment (student["grade"] = 10) after codegen.
+    """
+    _, ec = _analyze("student = {grade = 0}\nstudent.grade = 10\n")
+
+    assert ec.is_empty(), (
+        f"CR-02: dot-write to a defined dict object must produce NO errors.\n"
+        f"Got:\n{ec.report()}"
+    )

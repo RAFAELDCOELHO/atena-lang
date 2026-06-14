@@ -867,3 +867,60 @@ def test_G2_dict_dot_write_execution():
     assert "9" in result.stdout, (
         f"Expected '9' in output from dict dot-write fixture.\nGot:\n{result.stdout}"
     )
+
+
+# ---------------------------------------------------------------------------
+# CR-01: Function-call site must mangle Python-keyword names
+# ---------------------------------------------------------------------------
+
+
+def test_CR01_keyword_function_call_mangled():
+    """CR-01: Defining and calling a function whose name is a Python keyword must not crash.
+
+    'function pass(n)\\n    return n\\nshow pass(5)\\n' previously raised an
+    uncaught SyntaxError from the GEN-05 ast.parse() self-check because
+    _emit_FunctionDef mangled the def name to 'pass_' but _emit_FunctionCall
+    emitted the raw name 'pass', producing invalid Python.
+
+    After the fix the call name is also mangled, so the generated Python
+    contains 'def pass_' and 'pass_(5)', passes ast.parse(), and executing
+    it prints '5'.
+    """
+    source = "function pass(n)\n    return n\nshow pass(5)\n"
+
+    # Pipeline must not raise — _generate() calls generate() which runs GEN-05
+    python_src = _generate(source)
+
+    # Generated source must contain the mangled def AND the mangled call
+    assert "def pass_" in python_src, (
+        f"Expected 'def pass_' (mangled def) in generated output.\nGot:\n{python_src}"
+    )
+    assert "pass_(5)" in python_src, (
+        f"Expected 'pass_(5)' (mangled call) in generated output.\nGot:\n{python_src}"
+    )
+
+    # Generated Python must parse cleanly (GEN-05 self-check already verified,
+    # but assert explicitly so the failure message is clear)
+    try:
+        ast.parse(python_src)
+    except SyntaxError as exc:
+        raise AssertionError(
+            f"CR-01: generated Python is not parseable after keyword mangling.\n"
+            f"SyntaxError: {exc}\nGenerated:\n{python_src}"
+        ) from exc
+
+    # Generated Python must execute and print '5'
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, (
+        f"CR-01: generated Python crashed at runtime.\n"
+        f"stderr:\n{result.stderr}\nGenerated:\n{python_src}"
+    )
+    assert result.stdout.strip() == "5", (
+        f"CR-01: expected stdout '5', got {result.stdout.strip()!r}.\n"
+        f"Generated:\n{python_src}"
+    )
