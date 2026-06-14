@@ -36,15 +36,16 @@ _build_parser = _subparsers.add_parser(
     "build", help="Transpile an Atena program to Python"
 )
 _build_parser.add_argument("file", metavar="FILE", help=".atena source file")
+_build_parser.add_argument(
+    "--show",
+    action="store_true",
+    help="Print generated Python 3 source to stdout",
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-_STUB_PLACEHOLDER = (
-    "Atena can read your program, but running it isn't built yet — coming soon!"
-)
 
 
 def _read_file(path: str) -> str:
@@ -127,38 +128,40 @@ def main() -> None:
         print(_file_error_message(args.file, exc), file=sys.stderr)
         sys.exit(1)
 
-    # --- Transpile (stub raises NotImplementedError → friendly placeholder) --
+    # --- Transpile (pipeline.py prints errors to stderr and returns None on failure) --
     try:
         result = transpile(source, args.file)
-    except NotImplementedError:
-        print(_STUB_PLACEHOLDER)
-        sys.exit(0)
     except (KeyboardInterrupt, SystemExit):
         raise
     except BaseException as exc:
         print(_internal_error_message(exc), file=sys.stderr)
         sys.exit(1)
 
-    # Future state: pipeline returns a string; act on subcommand
-    if result is not None:
-        if args.command == "build":
-            out_path = os.path.splitext(args.file)[0] + ".py"
-            try:
-                with open(out_path, "w", encoding="utf-8") as fh:
-                    fh.write(result)
-            except OSError as exc:
-                print(_file_error_message(out_path, exc), file=sys.stderr)
-                sys.exit(1)
-            print(f'Built "{os.path.basename(out_path)}".')
-        else:
-            # run: exec the generated Python — wrap so no traceback reaches the learner
-            try:
-                code = compile(result, args.file, "exec")
-                exec(code, {})  # noqa: S102
-            except SystemExit:
-                raise
-            except BaseException as exc:  # learner program runtime error
-                # Surface as a plain-English message (Phase 5 will refine this);
-                # never let a Python traceback escape.
-                print(_internal_error_message(exc), file=sys.stderr)
-                sys.exit(1)
+    # When transpile() returns None the error report has already been printed to stderr
+    if result is None:
+        sys.exit(1)
+
+    if args.command == "build":
+        out_path = os.path.splitext(args.file)[0] + ".py"
+        try:
+            with open(out_path, "w", encoding="utf-8") as fh:
+                fh.write(result)
+        except OSError as exc:
+            print(_file_error_message(out_path, exc), file=sys.stderr)
+            sys.exit(1)
+        print(f'Built "{os.path.basename(out_path)}".')
+        if args.show:
+            print(result)
+    else:
+        # run: exec the generated Python — wrap so no traceback reaches the learner
+        # TODO Plan 03: replace _internal_error_message with _runtime_error_message for learner errors (D-04)
+        try:
+            code = compile(result, args.file, "exec")
+            exec(code, {"__name__": "__main__"})  # noqa: S102
+        except SystemExit:
+            raise
+        except BaseException as exc:  # learner program runtime error
+            # Surface as a plain-English message (Plan 03 will refine this);
+            # never let a Python traceback escape.
+            print(_internal_error_message(exc), file=sys.stderr)
+            sys.exit(1)
