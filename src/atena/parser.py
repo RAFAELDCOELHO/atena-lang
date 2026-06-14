@@ -26,7 +26,8 @@ from atena.ast_nodes import (
 # Binding-power table — single source of truth for Pratt precedence.
 # Higher number = tighter binding. All operators are left-associative
 # (right operand is parsed with min_bp = bp, not bp-1).
-# "not" is unary — handled in _parse_unary, not in this table.
+# "not" is unary — handled in _parse_unary, not in this table. It binds looser
+# than comparison but tighter than "and"/"or" (Python-aligned); see _NOT_OPERAND_BP.
 # Postfix [] . () are handled as a tight loop in _parse_postfix, not here.
 # ---------------------------------------------------------------------------
 
@@ -44,6 +45,12 @@ _BINARY_BP: dict[str, int] = {
     "*":   5,
     "/":   5,
 }
+
+# Minimum binding power for the operand of unary "not". Set to bp("and") so the
+# operand absorbs comparison/arithmetic/postfix (bp > 2) but never "and"/"or",
+# making "not a == b" parse as "not (a == b)" — matching Python and the
+# natural-language reading (WR-04).
+_NOT_OPERAND_BP: int = _BINARY_BP["and"]
 
 # Comparison operators. Atena does not support Python-style comparison
 # chaining (1 < 2 < 3): all comparisons share bp=3 and chain left-
@@ -276,14 +283,17 @@ class Parser:
     def _parse_unary(self) -> Node:
         """Parse unary 'not' and unary '-', then fall through to postfix loop.
 
-        'not' is right-recursive: 'not not x' is valid.
+        'not' binds looser than comparison but tighter than 'and'/'or' (matches
+        Python): 'not a == b' parses as 'not (a == b)'. Its operand is parsed at
+        min_bp = _NOT_OPERAND_BP, so it absorbs comparison/arithmetic/postfix but
+        stops at 'and'/'or'. Still right-recursive: 'not not x' is valid.
         Unary '-' binds tighter than any binary op — only applies to the
         immediate primary+postfix (PITFALLS.md §7).
         """
         tok = self._current()
         if tok.type == TokenType.KEYWORD and tok.value == "not":
             self._advance()
-            operand = self._parse_unary()   # right-recursive
+            operand = self._parse_expression(_NOT_OPERAND_BP)
             return UnaryOp(
                 op="not",
                 operand=operand,

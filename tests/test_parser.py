@@ -1075,17 +1075,18 @@ def test_Px_comparison_precedence():
 
 
 def test_Px_logical_not_in_condition():
-    """'if not x == 0\\n    show x\\n' → If.condition is BinOp('==', UnaryOp('not', x), 0).
+    """'if not x == 0\\n    show x\\n' → If.condition is UnaryOp('not', BinOp('==', x, 0)).
 
-    Covers PARSE-02 (logical not in condition): 'not' is a unary prefix that
-    wraps only the immediately following primary (Pratt nud for 'not').
-    Because 'not' calls _parse_unary() which returns to _parse_expression where
-    the '==' binary operator (bp=3) is still consumed, the actual parse tree is:
-        BinOp(op='==', left=UnaryOp(op='not', operand=Identifier('x')), right=NumberLiteral(0))
-    i.e. 'not x == 0' means '(not x) == 0', which is the tightest-unary behavior.
+    Covers PARSE-02 (logical not in condition). 'not' binds looser than
+    comparison but tighter than 'and'/'or' (Python-aligned, WR-04): its operand
+    is parsed at min_bp = _NOT_OPERAND_BP = bp('and'), so the '==' comparison is
+    absorbed into the operand. The parse tree is:
+        UnaryOp(op='not', operand=BinOp(op='==', left=Identifier('x'), right=NumberLiteral(0)))
+    i.e. 'not x == 0' means 'not (x == 0)' — matching Python and the
+    natural-language reading ("x is not equal to 0").
 
     PITFALLS.md Pitfall 8: logical operator precedence verified end-to-end.
-    The If.condition root is BinOp('=='), not UnaryOp('not').
+    The If.condition root is UnaryOp('not'), not BinOp('==').
     """
     source = "if not x == 0\n    show x\n"
     program, ec = _parse(source)
@@ -1094,14 +1095,54 @@ def test_Px_logical_not_in_condition():
     if_node = program.statements[0]
     assert isinstance(if_node, If)
     condition = if_node.condition
-    # Top-level is '==' (comparison): '(not x) == 0'
-    assert isinstance(condition, BinOp)
-    assert condition.op == "=="
-    # Left side is UnaryOp('not', Identifier('x'))
-    assert isinstance(condition.left, UnaryOp)
-    assert condition.left.op == "not"
-    assert isinstance(condition.left.operand, Identifier)
-    assert condition.left.operand.name == "x"
-    # Right side is NumberLiteral(0)
-    assert isinstance(condition.right, NumberLiteral)
-    assert condition.right.value == 0
+    # Top-level is 'not' (unary): 'not (x == 0)'
+    assert isinstance(condition, UnaryOp)
+    assert condition.op == "not"
+    # Operand is BinOp('==', Identifier('x'), NumberLiteral(0))
+    inner = condition.operand
+    assert isinstance(inner, BinOp)
+    assert inner.op == "=="
+    assert isinstance(inner.left, Identifier)
+    assert inner.left.name == "x"
+    assert isinstance(inner.right, NumberLiteral)
+    assert inner.right.value == 0
+
+
+def test_Px_not_precedence_python_aligned():
+    """'not' binds below comparison but above 'and'/'or', matching Python (WR-04).
+
+    Pins the four precedence relationships:
+      - 'not a == b'  -> not (a == b)      ('not' looser than comparison)
+      - 'not a and b' -> (not a) and b     ('not' tighter than 'and')
+      - 'a and not b' -> a and (not b)
+      - 'not not a'   -> not (not a)       (right-recursive)
+    All parse with no errors.
+    """
+    # not a == b -> not (a == b)
+    prog, ec = _parse("x = not a == b\n")
+    val = prog.statements[0].value
+    assert ec.is_empty()
+    assert isinstance(val, UnaryOp) and val.op == "not"
+    assert isinstance(val.operand, BinOp) and val.operand.op == "=="
+
+    # not a and b -> (not a) and b
+    prog, ec = _parse("x = not a and b\n")
+    val = prog.statements[0].value
+    assert ec.is_empty()
+    assert isinstance(val, BinOp) and val.op == "and"
+    assert isinstance(val.left, UnaryOp) and val.left.op == "not"
+    assert isinstance(val.right, Identifier) and val.right.name == "b"
+
+    # a and not b -> a and (not b)
+    prog, ec = _parse("x = a and not b\n")
+    val = prog.statements[0].value
+    assert ec.is_empty()
+    assert isinstance(val, BinOp) and val.op == "and"
+    assert isinstance(val.right, UnaryOp) and val.right.op == "not"
+
+    # not not a -> not (not a)
+    prog, ec = _parse("x = not not a\n")
+    val = prog.statements[0].value
+    assert ec.is_empty()
+    assert isinstance(val, UnaryOp) and val.op == "not"
+    assert isinstance(val.operand, UnaryOp) and val.operand.op == "not"
