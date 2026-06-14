@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-13 — Phase 1 (Lexer) complete.*
+*Last updated: 2026-06-14 — Phase 2 (Parser) complete: token stream → complete Program AST with Pratt precedence ladder, indentation-delimited blocks, and collect-all-errors recovery (59 parser tests green).*
