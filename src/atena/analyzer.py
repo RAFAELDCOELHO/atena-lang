@@ -111,11 +111,20 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_Assign(self, node: Assign) -> str:
-        """Visit the assigned value for type inference.
+        """Visit the assigned value for type inference and register its type.
 
-        Symbol table registration is implemented in Plan 03 (scope/arity).
+        Basic type tracking (for + coercion decisions on subsequent uses) is
+        implemented here so that tests like test_A1_string_concat_no_coerce
+        and test_A1_number_plus_number_no_coerce can resolve correctly.
+        Full scope/arity enforcement (undefined-name errors, two-level scope,
+        ask registration) is implemented in Plan 03.
         """
-        self._visit(node.value)
+        inferred = self._visit(node.value)
+        # Register the variable's inferred type in the current scope so that
+        # subsequent uses (visit_Identifier) can return the correct type for
+        # coercion decisions.
+        scope = self._locals if self._locals is not None else self._globals
+        scope[node.name] = inferred
         return "unknown"
 
     def visit_Show(self, node: Show) -> str:
@@ -174,7 +183,70 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_BinOp(self, node: BinOp) -> str:
-        return "unknown"
+        """Type-check and coerce the "+" operator (D-01, D-02, D-04).
+
+        Non-"+" operators are not type-checked in v1.0 (D-04).
+        For "+":
+          - Both types known → consult _COERCE_TABLE for outcome.
+          - Either type unknown → convert this BinOp node in-place to a
+            FunctionCall("_atena_concat", [left, right]) so Phase 4 can emit
+            the runtime helper without re-deriving the decision (D-02).
+            In-place node class mutation (node.__class__ = FunctionCall) keeps
+            the same object reference visible to all callers (e.g., assign.value)
+            without needing parent context.
+        """
+        left_type = self._visit(node.left)
+        right_type = self._visit(node.right)
+
+        if node.op != "+":
+            # Non-+ operators: no static type-checking in v1.0 (D-04).
+            return "unknown"
+
+        # Short-circuit: if either side is unknown, route through runtime helper (D-02).
+        if left_type == "unknown" or right_type == "unknown":
+            orig_left = node.left
+            orig_right = node.right
+            # Convert this BinOp in-place to a FunctionCall so that all references
+            # (e.g. assign.value, show.value) immediately see a FunctionCall.
+            node.__class__ = FunctionCall  # type: ignore[assignment]
+            node.name = "_atena_concat"  # type: ignore[attr-defined]
+            node.args = [orig_left, orig_right]  # type: ignore[attr-defined]
+            return "unknown"
+
+        # Both types known — consult the coercion table.
+        outcome = _COERCE_TABLE.get((left_type, right_type), "error")
+
+        if outcome == "error":
+            msg = (
+                f"I can't add a {_HUMAN_TYPE.get(left_type, left_type)} and a "
+                f"{_HUMAN_TYPE.get(right_type, right_type)} together"
+                " — try making them the same kind first."
+            )
+            self._errors.add(node.line, msg, node.source_line)
+            return "unknown"
+
+        if outcome == "coerce_right":
+            # Wrap right operand in str() (D-01: string + number/bool)
+            node.right = FunctionCall(
+                name="str",
+                args=[node.right],
+                line=node.right.line,
+                source_line=node.right.source_line,
+            )
+            return "str"
+
+        if outcome == "coerce_left":
+            # Wrap left operand in str() (D-01: number/bool + string)
+            node.left = FunctionCall(
+                name="str",
+                args=[node.left],
+                line=node.left.line,
+                source_line=node.left.source_line,
+            )
+            return "str"
+
+        # outcome == "no_coerce": both sides same type, no wrapping needed.
+        return left_type
 
     def visit_UnaryOp(self, node: UnaryOp) -> str:
         return "unknown"
@@ -205,7 +277,15 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_Identifier(self, node: Identifier) -> str:
-        return "unknown"
+        """Look up the identifier's type in the current scope.
+
+        Undefined-name error detection and suggest() affordance are
+        implemented in Plan 03 (SEM-06/D-09).  Here we just return the
+        registered type (or "unknown" if not yet seen), enabling coercion
+        decisions for variables assigned earlier in the program.
+        """
+        scope = self._locals if self._locals is not None else self._globals
+        return scope.get(node.name, "unknown")
 
     def visit_NumberLiteral(self, node: NumberLiteral) -> str:
         return "number"
