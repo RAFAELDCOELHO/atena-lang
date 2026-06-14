@@ -342,13 +342,45 @@ class SemanticAnalyzer:
     def visit_Identifier(self, node: Identifier) -> str:
         """Look up the identifier's type in the current scope.
 
-        Undefined-name error detection and suggest() affordance are
-        implemented in Plan 03 (SEM-06/D-09).  Here we just return the
-        registered type (or "unknown" if not yet seen), enabling coercion
-        decisions for variables assigned earlier in the program.
+        Four-case resolution (SEM-06, D-08, D-09):
+        1. Name in current scope → return its type (no error).
+        2. Inside a function and name is a known function → return "unknown"
+           (callable, not a value; type irrelevant here).
+        3. Inside a function and name is a top-level variable → D-08 tailored
+           teaching message; poison in locals to suppress cascade.
+        4. Fully undefined → generic "don't know what X is" + suggest() hint;
+           poison in current scope to suppress cascade errors (PITFALLS 12).
         """
+        name = node.name
+        # Case 1: Check the current execution scope first.
         scope = self._locals if self._locals is not None else self._globals
-        return scope.get(node.name, "unknown")
+        if name in scope:
+            return scope[name]
+
+        # Case 2: Inside a function — can still call earlier-defined functions.
+        if self._locals is not None and name in self._functions:
+            return "unknown"
+
+        # Case 3: Inside a function — name exists at top level but is not in
+        # local scope (D-08 tailored outer-variable teaching message).
+        if self._locals is not None and name in self._globals:
+            self._errors.add(
+                node.line,
+                f'A function can only use its own inputs — pass "{name}" in as a parameter.',
+                node.source_line,
+            )
+            self._locals[name] = "unknown"  # poison in locals to suppress cascade
+            return "unknown"
+
+        # Case 4: Fully undefined — generic error with suggest() hint.
+        candidates = list(scope.keys()) + list(ATENA_KEYWORDS)
+        hint = suggest(name, candidates)
+        msg = f'I don\'t know what "{name}" is yet. Did you forget to create it first?'
+        if hint:
+            msg = f'{msg} {hint}'
+        self._errors.add(node.line, msg, node.source_line)
+        scope[name] = "unknown"  # poison: suppress cascade errors (D-09, PITFALLS 12)
+        return "unknown"
 
     def visit_NumberLiteral(self, node: NumberLiteral) -> str:
         return "number"
