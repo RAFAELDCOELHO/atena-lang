@@ -22,7 +22,7 @@ show make_greeting(name)
 total = g1 + g2 + g3 + g4
 avg = total / 4
 verdict = is_passing(avg)
-show "Your average is: " + str(avg)
+show "Your average is: " + avg
 show "Result: " + verdict
 
 if avg >= 6
@@ -34,21 +34,21 @@ student.name = name
 show "Student on record: " + student.name
 
 add 10 to grades
-show "After bonus grade, count: " + str(length grades)
+show "After bonus grade, count: " + length(grades)
 remove 10 from grades
-show "After removal, count: " + str(length grades)
+show "After removal, count: " + length(grades)
 
-show "First grade: " + str(grades[1])
+show "First grade: " + grades[1]
 i = 2
-show "Grade at position 2: " + str(grades[i])
+show "Grade at position 2: " + grades[i]
 
 j = 1
 while j <= 3
     j = j + 1
-show "Counted to: " + str(j)
+show "Counted to: " + j
 
 count = 0
 repeat 2 times
     repeat 2 times
         count = count + 1
-show "Nested repeat count: " + str(count)
+show "Nested repeat count: " + count

@@ -29,7 +29,7 @@ print(make_greeting(name))
 total = g1 + g2 + g3 + g4
 avg = total / 4
 verdict = is_passing(avg)
-print(_atena_concat("Your average is: ", str(avg)))
+print("Your average is: " + str(avg))
 print(_atena_concat("Result: ", verdict))
 if avg >= 6:
     student["passed"] = True
@@ -38,18 +38,18 @@ else:
 student["name"] = name
 print(_atena_concat("Student on record: ", student["name"]))
 grades.append(10)
-print(_atena_concat("After bonus grade, count: ", str(len(grades))))
+print(_atena_concat("After bonus grade, count: ", len(grades)))
 grades.remove(10)
-print(_atena_concat("After removal, count: ", str(len(grades))))
-print(_atena_concat("First grade: ", str(grades[0])))
+print(_atena_concat("After removal, count: ", len(grades)))
+print(_atena_concat("First grade: ", grades[0]))
 i = 2
-print(_atena_concat("Grade at position 2: ", str(grades[_atena_index(i)])))
+print(_atena_concat("Grade at position 2: ", grades[_atena_index(i)]))
 j = 1
 while j <= 3:
     j = j + 1
-print(_atena_concat("Counted to: ", str(j)))
+print("Counted to: " + str(j))
 count = 0
 for _atena_i0 in range(2):
     for _atena_i1 in range(2):
         count = count + 1
-print(_atena_concat("Nested repeat count: ", str(count)))
+print("Nested repeat count: " + str(count))
