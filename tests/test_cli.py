@@ -164,16 +164,14 @@ def test_c7_internal_error_no_line(
     existing_atena_file: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """C-7: RuntimeError from transpile → friendly internal-error message, no traceback."""
-    import atena.pipeline as _pipeline
+    import atena.cli as _cli
 
-    def _boom(source: str, filename: str) -> str | None:
+    def _boom(source: str, filename: str):
         raise RuntimeError("internal boom")
 
-    monkeypatch.setattr(_pipeline, "transpile", _boom)
-
-    # Re-import main after patching so it picks up the new transpile
-    import atena.cli as _cli
-    monkeypatch.setattr(_cli, "transpile", _boom)
+    # The run path transpiles+compiles via compile_for_run; a raise there is an
+    # internal bug and must route to the blame-free internal-error message.
+    monkeypatch.setattr(_cli, "compile_for_run", _boom)
 
     import io
 
@@ -212,12 +210,12 @@ def test_c8_internal_error_with_line(
     """C-8: Exception with atena_line=7 → 'near line 7' in message, no traceback."""
     import atena.cli as _cli
 
-    def _boom_with_line(source: str, filename: str) -> str | None:
+    def _boom_with_line(source: str, filename: str):
         err = RuntimeError("with line info")
         err.atena_line = 7  # type: ignore[attr-defined]
         raise err
 
-    monkeypatch.setattr(_cli, "transpile", _boom_with_line)
+    monkeypatch.setattr(_cli, "compile_for_run", _boom_with_line)
 
     import io
 
@@ -532,10 +530,10 @@ def test_c14_exec_runtime_error_no_traceback(
     import io
 
     # Simulate transpile returning code that raises ZeroDivisionError at runtime
-    def _transpile_boom(source: str, filename: str) -> str | None:
-        return "x = 1 / 0\n"
+    def _compile_boom(source: str, filename: str):
+        return compile("x = 1 / 0\n", "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_boom)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_boom)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -579,10 +577,10 @@ def test_c20_runtime_index_error(
     import atena.cli as _cli
     import io
 
-    def _transpile_index_error(source: str, filename: str) -> str | None:
-        return "items = [1, 2, 3]\nprint(items[5])\n"
+    def _compile_index_error(source: str, filename: str):
+        return compile("items = [1, 2, 3]\nprint(items[5])\n", "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_index_error)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_index_error)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -622,10 +620,10 @@ def test_c21_runtime_zero_division(
     import atena.cli as _cli
     import io
 
-    def _transpile_divzero(source: str, filename: str) -> str | None:
-        return "x = 10 / 0\n"
+    def _compile_divzero(source: str, filename: str):
+        return compile("x = 10 / 0\n", "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_divzero)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_divzero)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -668,10 +666,10 @@ def test_c22_runtime_key_error(
     import atena.cli as _cli
     import io
 
-    def _transpile_key_error(source: str, filename: str) -> str | None:
-        return 'x = {}\nprint(x["missing"])\n'
+    def _compile_key_error(source: str, filename: str):
+        return compile('x = {}\nprint(x["missing"])\n', "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_key_error)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_key_error)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -711,10 +709,10 @@ def test_c23_runtime_value_error_remove(
     import atena.cli as _cli
     import io
 
-    def _transpile_value_error(source: str, filename: str) -> str | None:
-        return "x = [1, 2]\nx.remove(99)\n"
+    def _compile_value_error(source: str, filename: str):
+        return compile("x = [1, 2]\nx.remove(99)\n", "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_value_error)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_value_error)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -754,10 +752,10 @@ def test_c24_runtime_generic_uncurated(
     import atena.cli as _cli
     import io
 
-    def _transpile_memory_error(source: str, filename: str) -> str | None:
-        return 'raise MemoryError("boom")\n'
+    def _compile_memory_error(source: str, filename: str):
+        return compile('raise MemoryError("boom")\n', "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_memory_error)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_memory_error)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()
@@ -795,10 +793,10 @@ def test_c25_runtime_error_no_traceback_subprocess(
     import atena.cli as _cli
     import io
 
-    def _transpile_divzero(source: str, filename: str) -> str | None:
-        return "x = 1 / 0\n"
+    def _compile_divzero(source: str, filename: str):
+        return compile("x = 1 / 0\n", "<test>", "exec")
 
-    monkeypatch.setattr(_cli, "transpile", _transpile_divzero)
+    monkeypatch.setattr(_cli, "compile_for_run", _compile_divzero)
     monkeypatch.setattr(sys, "argv", ["atena", "run", existing_atena_file])
 
     captured_stderr = io.StringIO()

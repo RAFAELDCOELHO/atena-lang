@@ -142,15 +142,15 @@ class CodeGenerator:
     # Public entry point
     # -----------------------------------------------------------------------
 
-    def generate(self) -> str:
-        """Walk all top-level statements; return the Python source string.
+    def build_module(self) -> ast.Module:
+        """Build the Python ``ast.Module`` for the program.
 
-        Applies the three D-02 post-patches after ast.unparse():
-        1. Restore double-quoted strings (single-quote -> double-quote, carefully).
-        2. Blank lines between top-level function definitions.
-        3. Header comment at the top.
-        Then runs ast.parse() self-check (GEN-05) — a failure here is an
-        internal bug, not a user error.
+        Each emitted Python node carries the ``lineno`` of the Atena source
+        line it came from (set in ``_emit``/``_emit_as_stmt``), so compiling
+        this module directly — rather than the unparsed string — yields a code
+        object whose runtime tracebacks report the learner's ORIGINAL Atena
+        line, not a line in the generated Python (CR-01).  The ``atena run``
+        path compiles this module; ``generate()`` unparses it for ``build``.
         """
         body_stmts: list[ast.stmt] = []
         for stmt in self._program.statements:
@@ -163,7 +163,26 @@ class CodeGenerator:
         # Prepend on-demand helper bodies (GEN-04, Claude's Discretion: on-demand)
         preamble = self._build_preamble()
         module = ast.Module(body=preamble + body_stmts, type_ignores=[])
+        # fix_missing_locations fills any unstamped node (and propagates a
+        # parent's Atena lineno down to children that lack one).
         ast.fix_missing_locations(module)
+        return module
+
+    def generate(self) -> str:
+        """Walk all top-level statements; return the Python source string.
+
+        Applies the three D-02 post-patches after ast.unparse():
+        1. Restore double-quoted strings (single-quote -> double-quote, carefully).
+        2. Blank lines between top-level function definitions.
+        3. Header comment at the top.
+        Then runs ast.parse() self-check (GEN-05) — a failure here is an
+        internal bug, not a user error.
+
+        Line numbers are irrelevant to this string form (``ast.unparse`` ignores
+        them); the Atena-line provenance is consumed only via ``build_module()``
+        on the run path.
+        """
+        module = self.build_module()
         python_source = ast.unparse(module)
 
         # D-02 post-patches
@@ -218,10 +237,26 @@ class CodeGenerator:
     # Dispatch
     # -----------------------------------------------------------------------
 
+    @staticmethod
+    def _stamp(py_node: ast.AST, atena_node: Node) -> None:
+        """Carry the Atena source line onto the emitted Python node (CR-01).
+
+        Only ``lineno``/``end_lineno`` are set — that is all a runtime traceback
+        needs to point at the learner's line.  Column offsets are left to
+        ``fix_missing_locations``.  Nodes without a real line (e.g. analyzer-
+        injected coercions) are skipped and inherit their parent's line.
+        """
+        line = getattr(atena_node, "line", 0)
+        if isinstance(line, int) and line > 0 and isinstance(py_node, (ast.stmt, ast.expr)):
+            py_node.lineno = line
+            py_node.end_lineno = line
+
     def _emit(self, node: Node) -> ast.stmt | ast.expr:
         """Dispatch to _emit_<NodeType>; raise TypeError for unknown nodes."""
         method = getattr(self, f"_emit_{type(node).__name__}", self._emit_default)
-        return method(node)
+        result = method(node)
+        self._stamp(result, node)
+        return result
 
     def _emit_as_stmt(self, node: Node) -> ast.stmt | list[ast.stmt]:
         """Emit node as a statement, wrapping bare expressions in ast.Expr.
@@ -234,7 +269,9 @@ class CodeGenerator:
         """
         result = self._emit(node)
         if isinstance(result, ast.expr):
-            return ast.Expr(value=result)
+            wrapper = ast.Expr(value=result)
+            self._stamp(wrapper, node)
+            return wrapper
         return result  # type: ignore[return-value]
 
     def _emit_default(self, node: Node) -> ast.expr:

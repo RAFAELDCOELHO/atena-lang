@@ -18,7 +18,12 @@ import os
 import sys
 import traceback
 
-from atena.pipeline import transpile
+from atena.pipeline import compile_for_run, transpile
+
+# Names of the on-demand runtime helpers injected by codegen. Errors raised
+# *inside* these frames must be attributed to the Atena call site, not to the
+# helper's own (synthetic) line numbers.
+_HELPER_FRAMES = frozenset({"_atena_index", "_atena_concat"})
 
 # ---------------------------------------------------------------------------
 # argparse setup — built at module level so tests can import without side effects
@@ -60,13 +65,8 @@ def _read_file(path: str) -> str:
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
-    except FileNotFoundError:
-        raise
-    except IsADirectoryError:
-        raise
-    except PermissionError:
-        raise
-    except UnicodeDecodeError:
+    except (FileNotFoundError, IsADirectoryError, PermissionError, UnicodeDecodeError):
+        # Surfaced verbatim — main() maps each to a friendly _file_error_message.
         raise
     except OSError as exc:
         # Treat other OS-level read failures as generic unreadable
@@ -122,18 +122,26 @@ def _runtime_error_message(exc: BaseException, source_lines: list[str]) -> str:
     Never surfaces raw exception class names, Python tracebacks, or the internal
     "Something went wrong inside Atena" wording — those are reserved for transpiler
     bugs caught by _internal_error_message() (D-04 split).
+
+    Because ``atena run`` compiles the Atena AST directly (see
+    ``pipeline.compile_for_run``), traceback line numbers ARE Atena source
+    lines.  Frames inside injected runtime helpers (``_atena_index`` /
+    ``_atena_concat``) carry synthetic lines, so they are skipped in favour of
+    the nearest Atena call-site frame (CR-01).
     """
-    # --- Extract Python lineno from traceback (best-effort per D-07) ----------
+    # --- Pick the innermost frame that belongs to the learner's program ------
     tb_frames = traceback.extract_tb(exc.__traceback__)
-    python_lineno = tb_frames[-1].lineno if tb_frames else None
+    atena_lineno: int | None = None
+    for frame in reversed(tb_frames):
+        if frame.name in _HELPER_FRAMES:
+            continue  # synthetic helper line — attribute to the call site instead
+        atena_lineno = frame.lineno
+        break
 
     # --- Map to Atena source line for the → display ---------------------------
     source_line = ""
-    if python_lineno is not None and 1 <= python_lineno <= len(source_lines):
-        source_line = source_lines[python_lineno - 1].strip()
-
-    # --- Best-effort line number display (D-07) --------------------------------
-    line_display: int | str = python_lineno if python_lineno is not None else "unknown"
+    if atena_lineno is not None and 1 <= atena_lineno <= len(source_lines):
+        source_line = source_lines[atena_lineno - 1].strip()
 
     # --- Dispatch on exception type (D-03 curated catalog) --------------------
     if isinstance(exc, ZeroDivisionError):
@@ -142,7 +150,13 @@ def _runtime_error_message(exc: BaseException, source_lines: list[str]) -> str:
         key = exc.args[0] if exc.args else "unknown"
         message = f"that dictionary doesn't have a key called {key!r}."
     elif isinstance(exc, ValueError):
-        message = "that item wasn't in the list, so it couldn't be removed."
+        # Only a failed list.remove (the one ValueError Atena programs can raise
+        # by design) gets the specific message; every other ValueError is generic
+        # rather than confidently-wrong (CR-02).
+        if "not in list" in str(exc):
+            message = "that item wasn't in the list, so it couldn't be removed."
+        else:
+            message = "while running your program, an error occurred."
     elif isinstance(exc, IndexError):
         if "List positions in Atena start at 1" in str(exc):
             message = "List positions in Atena start at 1, so there's no position 0 or a negative one."
@@ -152,7 +166,10 @@ def _runtime_error_message(exc: BaseException, source_lines: list[str]) -> str:
         # Generic fallback — no raw class name, no traceback (D-03, D-04)
         message = "while running your program, an error occurred."
 
-    return f"Error on line {line_display}: {message}\n  → {source_line}"
+    # --- Format (D-05). Omit a fabricated line number we cannot prove (IN-03) -
+    if atena_lineno is not None:
+        return f"Error on line {atena_lineno}: {message}\n  → {source_line}"
+    return f"Error: {message}"
 
 
 # ---------------------------------------------------------------------------
@@ -174,21 +191,28 @@ def main() -> None:
         print(_file_error_message(args.file, exc), file=sys.stderr)
         sys.exit(1)
 
-    # --- Transpile (pipeline.py prints errors to stderr and returns None on failure) --
-    try:
-        result = transpile(source, args.file)
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except BaseException as exc:
-        print(_internal_error_message(exc), file=sys.stderr)
-        sys.exit(1)
-
-    # When transpile() returns None the error report has already been printed to stderr
-    if result is None:
-        sys.exit(1)
-
     if args.command == "build":
+        # Guard against silently overwriting the learner's input (WR-01):
+        # `atena build foo.py` would compute out_path == foo.py.
         out_path = os.path.splitext(args.file)[0] + ".py"
+        if os.path.abspath(out_path) == os.path.abspath(args.file):
+            print(
+                'I can only build files ending in ".atena".',
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Transpile to a source string (pipeline prints errors + returns None).
+        try:
+            result = transpile(source, args.file)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except BaseException as exc:
+            print(_internal_error_message(exc), file=sys.stderr)
+            sys.exit(1)
+        if result is None:
+            sys.exit(1)
+
         try:
             with open(out_path, "w", encoding="utf-8") as fh:
                 fh.write(result)
@@ -199,12 +223,24 @@ def main() -> None:
         if args.show:
             print(result)
     else:
-        # run: exec the generated Python — wrap so no traceback reaches the learner
+        # run: compile the Atena AST so tracebacks map to Atena lines (CR-01).
+        # Any failure of transpile/compile is an INTERNAL bug (incl. a codegen
+        # SyntaxError) and must use the blame-free wording (D-04 / CR-03).
         try:
-            code = compile(result, args.file, "exec")
-            exec(code, {"__name__": "__main__"})  # noqa: S102
-        except SystemExit:
+            code = compile_for_run(source, os.path.basename(args.file))
+        except (KeyboardInterrupt, SystemExit):
             raise
+        except BaseException as exc:
+            print(_internal_error_message(exc), file=sys.stderr)
+            sys.exit(1)
+        if code is None:
+            sys.exit(1)
+
+        # exec the learner's program — wrap so no traceback reaches the learner.
+        try:
+            exec(code, {"__name__": "__main__"})  # noqa: S102
+        except (SystemExit, KeyboardInterrupt):
+            raise  # deliberate exit / Ctrl-C is not a program error (WR-03)
         except BaseException as exc:  # learner program runtime error
             # Translate to plain-English canonical format (D-04/D-05).
             # Never surface a raw Python traceback or class name.

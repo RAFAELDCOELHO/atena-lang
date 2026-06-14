@@ -14,8 +14,14 @@ findings:
   warning: 5
   info: 3
   total: 11
-status: issues_found
+status: resolved
+resolved: 2026-06-14T23:30:00Z
 ---
+
+> **Resolution (2026-06-14, gap closure):** All 3 Critical findings and the
+> high-value warnings were fixed and covered by real-pipeline regression tests
+> in `tests/test_cli_runtime_lines.py` (10 tests). See the "## Resolution"
+> section at the bottom for the per-finding disposition.
 
 # Phase 5: Code Review Report
 
@@ -318,3 +324,32 @@ reliable line is available, phrase the message without a line clause.
 _Reviewed: 2026-06-14T22:57:51Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+---
+
+## Resolution (2026-06-14 gap closure)
+
+Root-cause fix for CR-01: the `atena run` path now compiles the Python **AST
+module** (whose nodes carry the originating Atena `lineno`, stamped in codegen)
+instead of the unparsed source string. CPython's line table then maps runtime
+tracebacks straight back to the learner's Atena line — no offset math, no empty
+`→`. New `pipeline.compile_for_run()` does this; `pipeline.transpile()` is
+unchanged for `build`.
+
+| Finding | Status | Fix |
+|---|---|---|
+| CR-01 | ✅ Fixed | `codegen.build_module()` + `_stamp()` carry Atena `line` onto every emitted node; `compile_for_run()` compiles the module; `_runtime_error_message` skips injected-helper frames (`_atena_index`/`_atena_concat`) to attribute the error to the Atena call site. |
+| CR-02 | ✅ Fixed | `ValueError` branch narrowed to the `"not in list"` (list.remove) case; all other `ValueError`s use the generic message. |
+| CR-03 | ✅ Fixed | Run path separates transpile/compile (internal → `_internal_error_message`) from `exec` (runtime → `_runtime_error_message`). A codegen `SyntaxError` is internal. |
+| WR-01 | ✅ Fixed | `build` refuses when `out_path == input` (e.g. `build foo.py`). |
+| WR-02 | ✅ Fixed | `tests/test_cli_runtime_lines.py` runs the REAL pipeline and asserts the exact line number AND the non-empty `→` source line. Monkeypatched C-14/C-20–C-25 retargeted to `compile_for_run`. |
+| WR-03 | ✅ Fixed | `KeyboardInterrupt` re-raised alongside `SystemExit` in the exec handler. |
+| WR-04 | ✅ Fixed | Between-phase gate factored into `pipeline._gate()`; phases share `_analyze()`. |
+| WR-05 | ✅ Fixed | `compile_for_run` is called with `os.path.basename(args.file)`. |
+| IN-01 | ✅ Fixed | Dead pass-through `except` clauses in `_read_file` collapsed to one. |
+| IN-03 | ✅ Fixed | No more `line unknown` — when no Atena line is resolvable the message omits the line clause. |
+| IN-02 | Acknowledged | `transpile(filename)` kept for signature symmetry with `compile_for_run`; documented. |
+
+Verification: full suite 286 passed (was 276 + 10 new real-pipeline tests); manual
+e2e sweep across ZeroDivision / Index / Key / negative-index-helper / function-body
+errors confirms correct line + source line and zero tracebacks.
