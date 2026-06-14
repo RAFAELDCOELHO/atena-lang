@@ -33,6 +33,13 @@ _HUMAN_TYPE: dict[str, str] = {
     "unknown": "unknown",
 }
 
+# Single source of truth for all analyzer-injected helper names (WR-01 / IN-02).
+# _BUILTIN_HELPERS: user-visible built-ins that appear in source and in emitted code.
+# _INTERNAL_HELPERS: injected by the analyzer itself; must NEVER be writable by users
+#   (their names start with "_atena_" — that prefix is reserved).
+_BUILTIN_HELPERS: frozenset[str] = frozenset({"length", "str"})
+_INTERNAL_HELPERS: frozenset[str] = frozenset({"_atena_concat", "_atena_index"})
+
 # (left_type, right_type) → outcome for the "+" operator.
 # Covers all known-type (str / number / bool) pairings explicitly.
 # Any pair involving "list", "dict", or an unlisted combination falls to the
@@ -118,7 +125,26 @@ class SemanticAnalyzer:
         and test_A1_number_plus_number_no_coerce can resolve correctly.
         Full scope/arity enforcement (undefined-name errors, two-level scope,
         ask registration) is implemented in Plan 03.
+
+        WR-01: the "_atena_" prefix is reserved for analyzer-injected helpers.
+        Any user attempt to assign to a name with that prefix is rejected here
+        so injected nodes can never collide with user names.
+        NOTE: analyzer-injected FunctionCall nodes (e.g. _atena_index, _atena_concat)
+        are created directly in memory and never routed through visit_Assign —
+        only user-written source goes through this visitor — so the guard here
+        ONLY fires for user-written names and never for injected nodes.
         """
+        # WR-01: reject the reserved _atena_ prefix.
+        if node.name.startswith("_atena_"):
+            self._errors.add(
+                node.line,
+                f'"{node.name}" is a reserved internal name. '
+                "Names starting with \"_atena_\" are used by the Atena runtime — "
+                "please choose a different name.",
+                node.source_line,
+            )
+            return "unknown"
+
         inferred = self._visit(node.value)
         # Register the variable's inferred type in the current scope so that
         # subsequent uses (visit_Identifier) can return the correct type for
@@ -168,7 +194,43 @@ class SemanticAnalyzer:
         though — D-09). Pushes a fresh local scope (params only) for the body,
         then restores the previous scope unconditionally via try/finally so that
         no scope leaks even on internal Python errors.
+
+        WR-01: rejects the _atena_ prefix (reserved for analyzer-injected helpers).
+        WR-02: rejects duplicate function definitions.
         """
+        # WR-01: reject the reserved _atena_ prefix.
+        if node.name.startswith("_atena_"):
+            self._errors.add(
+                node.line,
+                f'"{node.name}" is a reserved internal name. '
+                "Names starting with \"_atena_\" are used by the Atena runtime — "
+                "please choose a different name.",
+                node.source_line,
+            )
+            return "unknown"
+
+        # WR-02: reject duplicate function definitions (keep first registration stable).
+        if node.name in self._functions:
+            self._errors.add(
+                node.line,
+                f'A function called "{node.name}" is already defined above. '
+                "Pick a different name.",
+                node.source_line,
+            )
+            # Do NOT overwrite the first registration — arity checks stay stable.
+            # Still visit the body for completeness so further errors are collected.
+            saved_locals = self._locals
+            saved_fn = self._current_fn
+            self._locals = {p: "unknown" for p in node.params}
+            self._current_fn = node.name
+            try:
+                for stmt in node.body:
+                    self._visit(stmt)
+            finally:
+                self._locals = saved_locals
+                self._current_fn = saved_fn
+            return "unknown"
+
         # Register BEFORE visiting body (self-recursion resolves; no external hoisting).
         self._functions[node.name] = len(node.params)
         self._globals[node.name] = "function"  # top-level code can call it after this point
@@ -202,8 +264,15 @@ class SemanticAnalyzer:
         for arg in node.args:
             self._visit(arg)
 
-        # Step 2: Built-in pass-through — never in self._functions, never error.
-        if node.name in {"length", "str", "_atena_concat", "_atena_index"}:
+        # Step 2: Built-in pass-through (WR-01).
+        # Internal helpers (_atena_*) are always a pass-through — they are never
+        # user-defined and never arity-checked (injected by the analyzer itself).
+        if node.name in _INTERNAL_HELPERS:
+            return "unknown"
+        # User-visible built-ins (length, str) pass through ONLY when the user
+        # has NOT redefined them. If the user wrote 'function str(x)…', prefer
+        # the user definition and fall through to the normal arity/defined check.
+        if node.name in _BUILTIN_HELPERS and node.name not in self._functions:
             return "unknown"
 
         # Step 3: Defined-before-called check (no hoisting — D-09, PITFALLS 20).

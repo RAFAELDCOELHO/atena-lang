@@ -411,6 +411,38 @@ def test_Ax_nested_subscript_independent():
 
 
 # ---------------------------------------------------------------------------
+# WR-01: Guard helper names — _atena_ prefix reserved, builtin shadowing handled
+# ---------------------------------------------------------------------------
+
+
+def test_A2_atena_prefix_assign_rejected():
+    """Assigning to a name starting with '_atena_' produces a plain-English error."""
+    _, ec = _analyze("_atena_index = 5\n")
+    assert not ec.is_empty()
+    report = ec.report()
+    assert "_atena_" in report or "reserved" in report.lower() or "internal" in report.lower()
+
+
+def test_A2_atena_prefix_function_def_rejected():
+    """Defining a function named '_atena_concat' produces a plain-English error."""
+    source = "function _atena_concat(a, b)\n    return a\n"
+    _, ec = _analyze(source)
+    assert not ec.is_empty()
+    report = ec.report()
+    assert "_atena_" in report or "reserved" in report.lower() or "internal" in report.lower()
+
+
+def test_A2_builtin_function_user_redefined_checked():
+    """User defines 'function str(x)' with wrong arity and calls str(5, 6) — arity IS checked."""
+    source = "function str(x)\n    return x\nshow str(5, 6)\n"
+    _, ec = _analyze(source)
+    # The user redefined str — normal arity check should fire (expects 1, gave 2)
+    assert not ec.is_empty()
+    report = ec.report()
+    assert "expects 1" in report or "str" in report
+
+
+# ---------------------------------------------------------------------------
 # CR-02: add/remove validate list target (defined-before-use)
 # ---------------------------------------------------------------------------
 
