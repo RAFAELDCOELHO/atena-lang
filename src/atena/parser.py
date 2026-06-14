@@ -269,6 +269,13 @@ class Parser:
             tok = self._current()
             if tok.type == TokenType.LBRACKET:
                 self._advance()   # consume '['
+                # If we immediately hit end-of-line or EOF, the bracket was never closed.
+                if self._check(TokenType.NEWLINE, TokenType.EOF):
+                    raise _ParseError(
+                        tok.line,
+                        'I reached the end of the line still waiting for a "]".',
+                        tok.source_line,
+                    )
                 index = self._parse_expression()
                 self._expect(TokenType.RBRACKET, 'I reached the end of the line still waiting for a "]".')
                 node = IndexAccess(
@@ -345,6 +352,15 @@ class Parser:
                 source_line=tok.source_line,
             )
 
+        # "ask" in expression position is a D-02 misuse — redirect with a friendly message.
+        # Valid use is only as assignment RHS: 'name = ask "prompt"'.
+        if tok.type == TokenType.KEYWORD and tok.value == "ask":
+            raise _ParseError(
+                tok.line,
+                'ask needs to save its answer into a name — try: answer = ask "What is your name?".',
+                tok.source_line,
+            )
+
         if tok.type == TokenType.IDENTIFIER:
             self._advance()
             return Identifier(name=tok.value, line=tok.line, source_line=tok.source_line)
@@ -396,21 +412,251 @@ class Parser:
         return DictLiteral(pairs=pairs, line=tok.line, source_line=tok.source_line)
 
     # -----------------------------------------------------------------------
-    # Statement dispatcher (minimal — Plan 03 fills in the full dispatch)
+    # Statement-level helpers
+    # -----------------------------------------------------------------------
+
+    def _consume_newline(self) -> None:
+        """Consume a NEWLINE token if present; do nothing at DEDENT/EOF.
+
+        Block-final statements may not have a trailing NEWLINE before the
+        DEDENT token. This avoids failing on syntactically valid programs where
+        the trailing NEWLINE was consumed by the block parser or is absent.
+        """
+        if self._check(TokenType.NEWLINE):
+            self._advance()
+
+    # -----------------------------------------------------------------------
+    # Statement parser methods (Plan 03)
+    # -----------------------------------------------------------------------
+
+    def _parse_show(self) -> Show:
+        """Parse: show <expression>"""
+        kw = self._advance()   # consume "show"
+        value = self._parse_expression()
+        # "ask" inside "show" is a D-02 misuse — detect it here via _parse_expression
+        # which will have already called _parse_primary; by the time we get back the
+        # "ask" would have been treated as an unknown keyword in expression position and
+        # raised a _ParseError. That error message from _parse_primary may not be D-02
+        # specific, so we handle "ask" appearing as a keyword inside expression by
+        # checking: if the current primary was "ask" we raise a D-02 error. However,
+        # since "ask" is a KEYWORD and _parse_primary only matches specific keywords
+        # (true, false, length), an "ask" in expression position will fall through to
+        # the _ParseError branch in _parse_primary. That error message is generic.
+        # D-02 redirect for ask-in-show is tested (test_P2_ask_misused_in_show): the
+        # test only checks that "save" or "answer" appears in the report, which the
+        # generic D-02 message satisfies. The _parse_primary error for an unexpected
+        # keyword will raise a _ParseError with the generic message. To ensure D-02
+        # redirect fires for "ask" in expression position, we override _parse_primary
+        # for the "ask" keyword below in _parse_primary_with_ask_guard; here we just
+        # parse normally — the guard is in _parse_primary itself.
+        self._consume_newline()
+        return Show(value=value, line=kw.line, source_line=kw.source_line)
+
+    def _parse_ask(self, target: str, line: int, source_line: str) -> Ask:
+        """Parse the ask portion of 'name = ask "prompt"'.
+
+        Called from _parse_assignment when 'ask' is seen as the RHS.
+        """
+        kw = self._advance()   # consume "ask"
+        if not self._check(TokenType.STRING):
+            raise _ParseError(
+                kw.line,
+                'ask needs to save its answer into a name — try: answer = ask "What is your name?".',
+                kw.source_line,
+            )
+        prompt_tok = self._advance()   # consume STRING token
+        self._consume_newline()
+        return Ask(prompt=prompt_tok.value, target=target, line=line, source_line=source_line)
+
+    def _parse_assignment(self) -> Assign | Ask:
+        """Parse: name = <expression>  OR  name = ask "prompt"
+
+        Called when current is IDENTIFIER and peek is ASSIGN.
+        """
+        name_tok = self._advance()   # consume IDENTIFIER
+        self._advance()              # consume ASSIGN '='
+        # Check if RHS is "ask" — this is the dedicated Ask statement form (D-01/D-02).
+        if self._check(TokenType.KEYWORD) and self._current().value == "ask":
+            return self._parse_ask(
+                target=name_tok.value,
+                line=name_tok.line,
+                source_line=name_tok.source_line,
+            )
+        value = self._parse_expression()
+        self._consume_newline()
+        return Assign(
+            name=name_tok.value,
+            value=value,
+            line=name_tok.line,
+            source_line=name_tok.source_line,
+        )
+
+    def _parse_if(self) -> If:
+        """Parse: if <condition> NEWLINE INDENT <body> DEDENT [else NEWLINE INDENT <body> DEDENT]"""
+        kw = self._advance()   # consume "if"
+        condition = self._parse_expression()
+        self._consume_newline()
+        then_body = self._parse_block()
+        else_body: list[Node] = []
+        # Optional else clause: only if current token is the "else" keyword.
+        if self._check(TokenType.KEYWORD) and self._current().value == "else":
+            self._advance()   # consume "else"
+            self._consume_newline()
+            else_body = self._parse_block()
+        return If(
+            condition=condition,
+            then_body=then_body,
+            else_body=else_body,
+            line=kw.line,
+            source_line=kw.source_line,
+        )
+
+    def _parse_while(self) -> While:
+        """Parse: while <condition> NEWLINE INDENT <body> DEDENT"""
+        kw = self._advance()   # consume "while"
+        condition = self._parse_expression()
+        self._consume_newline()
+        body = self._parse_block()
+        return While(condition=condition, body=body, line=kw.line, source_line=kw.source_line)
+
+    def _parse_repeat(self) -> Repeat:
+        """Parse: repeat <count> times NEWLINE INDENT <body> DEDENT"""
+        kw = self._advance()   # consume "repeat"
+        count = self._parse_expression()
+        # Expect the keyword "times" immediately after the count expression.
+        if not (self._check(TokenType.KEYWORD) and self._current().value == "times"):
+            tok = self._current()
+            raise _ParseError(
+                tok.line,
+                '"repeat" needs the word "times" — try: repeat 5 times.',
+                tok.source_line,
+            )
+        self._advance()   # consume "times"
+        self._consume_newline()
+        body = self._parse_block()
+        return Repeat(count=count, body=body, line=kw.line, source_line=kw.source_line)
+
+    def _parse_function_def(self) -> FunctionDef:
+        """Parse: function name(params) NEWLINE INDENT <body> DEDENT"""
+        kw = self._advance()   # consume "function"
+        name_tok = self._expect(TokenType.IDENTIFIER, 'Expected a function name after "function".')
+        self._expect(TokenType.LPAREN, f'Expected "(" after the function name "{name_tok.value}".')
+        params: list[str] = []
+        if not self._check(TokenType.RPAREN):
+            params.append(self._expect(TokenType.IDENTIFIER, 'Expected a parameter name.').value)
+            while self._match(TokenType.COMMA):
+                params.append(self._expect(TokenType.IDENTIFIER, 'Expected a parameter name after ",".').value)
+        self._expect(TokenType.RPAREN, 'I reached the end of the line still waiting for a ")".')
+        self._consume_newline()
+        # Track function nesting depth for top-level return check (D-04 item 3).
+        # fn_depth is decremented in finally so it stays consistent even if body
+        # parsing raises _ParseError (T-02-09).
+        self._fn_depth += 1
+        try:
+            body = self._parse_block()
+        finally:
+            self._fn_depth -= 1
+        return FunctionDef(
+            name=name_tok.value,
+            params=params,
+            body=body,
+            line=kw.line,
+            source_line=kw.source_line,
+        )
+
+    def _parse_return(self) -> Return:
+        """Parse: return <expression>"""
+        kw = self._advance()   # consume "return"
+        if self._fn_depth == 0:
+            raise _ParseError(kw.line, '"return" only works inside a function.', kw.source_line)
+        value = self._parse_expression()
+        self._consume_newline()
+        return Return(value=value, line=kw.line, source_line=kw.source_line)
+
+    def _parse_list_add(self) -> ListAdd:
+        """Parse: add <value> to <target>"""
+        kw = self._advance()   # consume "add"
+        value = self._parse_expression()
+        # Expect keyword "to"
+        tok = self._current()
+        if not (tok.type == TokenType.KEYWORD and tok.value == "to"):
+            raise _ParseError(
+                tok.line,
+                'Expected "to" after the value in "add … to …".',
+                tok.source_line,
+            )
+        self._advance()   # consume "to"
+        target_tok = self._expect(TokenType.IDENTIFIER, 'Expected a list name after "to".')
+        self._consume_newline()
+        return ListAdd(target=target_tok.value, value=value, line=kw.line, source_line=kw.source_line)
+
+    def _parse_list_remove(self) -> ListRemove:
+        """Parse: remove <value> from <target>"""
+        kw = self._advance()   # consume "remove"
+        value = self._parse_expression()
+        # Expect keyword "from"
+        tok = self._current()
+        if not (tok.type == TokenType.KEYWORD and tok.value == "from"):
+            raise _ParseError(
+                tok.line,
+                'Expected "from" after the value in "remove … from …".',
+                tok.source_line,
+            )
+        self._advance()   # consume "from"
+        target_tok = self._expect(TokenType.IDENTIFIER, 'Expected a list name after "from".')
+        self._consume_newline()
+        return ListRemove(target=target_tok.value, value=value, line=kw.line, source_line=kw.source_line)
+
+    def _parse_expression_statement(self) -> Node:
+        """Parse a bare expression at statement position.
+
+        Only function calls are valid bare expression statements. A bare
+        comparison (e.g. 'x == 5' intending assignment) is the = vs ==
+        Python-ism — caught here and redirected (D-04 item 2).
+        """
+        expr = self._parse_expression()
+        # Check for the == used as assignment slip (D-04 item 2).
+        if isinstance(expr, BinOp) and expr.op == "==":
+            raise _ParseError(
+                expr.line,
+                'Did you mean "x = 5"? Use one "=" to save a value, and "==" only to compare two things.',
+                expr.source_line,
+            )
+        # Only FunctionCall is a valid bare expression statement.
+        if not isinstance(expr, FunctionCall):
+            raise _ParseError(
+                expr.line,
+                f'I didn\'t expect "{self._tokens[self._pos - 1].value if self._pos > 0 else "?"}" here.',
+                expr.source_line,
+            )
+        self._consume_newline()
+        return expr
+
+    # -----------------------------------------------------------------------
+    # Statement dispatcher (full — Plan 03)
     # -----------------------------------------------------------------------
 
     def _dispatch_statement(self) -> Node | None:
-        """Minimal statement dispatcher: handles assignment and bare expression statements.
+        """Full statement dispatcher.
 
-        Plan 03 replaces this with the full statement dispatch (show, ask, if,
-        while, repeat, function, return, add, remove, Python-ism redirects).
-
-        Currently handles:
+        Dispatches on the current token to the appropriate parser method.
+        Handles:
         - NEWLINE: skip blank lines.
         - EOF: terminate cleanly.
-        - IDENTIFIER ASSIGN expr NEWLINE → Assign node.
-        - IDENTIFIER LPAREN ... RPAREN NEWLINE → FunctionCall node (bare call stmt).
-        - Any other expression starting token → parse expression and expect NEWLINE.
+        - KEYWORD "show": _parse_show()
+        - KEYWORD "if": _parse_if()
+        - KEYWORD "while": _parse_while()
+        - KEYWORD "repeat": _parse_repeat()
+        - KEYWORD "function": _parse_function_def()
+        - KEYWORD "return": _parse_return()
+        - KEYWORD "add": _parse_list_add()
+        - KEYWORD "remove": _parse_list_remove()
+        - KEYWORD "ask" (bare): D-02 redirect error.
+        - KEYWORD "else": unexpected else (not inside if context) → generic error.
+        - IDENTIFIER + ASSIGN: _parse_assignment()
+        - IDENTIFIER + other: _parse_expression_statement()
+        - Python-ism identifiers (def, elif, for, class, import): redirect errors (D-04).
+        - Anything else: generic _ParseError.
         """
         # Skip blank lines (NEWLINE without content)
         if self._check(TokenType.NEWLINE):
@@ -422,32 +668,88 @@ class Parser:
 
         tok = self._current()
 
-        # IDENTIFIER-led dispatch: could be assignment (x = expr) or bare call (x(...))
-        if tok.type == TokenType.IDENTIFIER:
-            # Peek ahead: if next token is ASSIGN, this is an assignment statement.
-            if self._peek().type == TokenType.ASSIGN:
-                name_tok = self._advance()   # consume identifier
-                self._advance()              # consume '='
-                value = self._parse_expression()
-                self._expect(TokenType.NEWLINE, f'Expected a new line after the assignment.')
-                return Assign(
-                    name=name_tok.value,
-                    value=value,
-                    line=name_tok.line,
-                    source_line=name_tok.source_line,
+        # ---- KEYWORD-led statements ----
+        if tok.type == TokenType.KEYWORD:
+            kw_value = tok.value
+            if kw_value == "show":
+                return self._parse_show()
+            if kw_value == "if":
+                return self._parse_if()
+            if kw_value == "while":
+                return self._parse_while()
+            if kw_value == "repeat":
+                return self._parse_repeat()
+            if kw_value == "function":
+                return self._parse_function_def()
+            if kw_value == "return":
+                return self._parse_return()
+            if kw_value == "add":
+                return self._parse_list_add()
+            if kw_value == "remove":
+                return self._parse_list_remove()
+            # Bare "ask" at statement level — D-02 misuse redirect.
+            if kw_value == "ask":
+                raise _ParseError(
+                    tok.line,
+                    'ask needs to save its answer into a name — try: answer = ask "What is your name?".',
+                    tok.source_line,
                 )
-            # Otherwise: parse as a bare expression (e.g. greet() or greet("Ana", 5)).
-            # _parse_expression will call _parse_unary → _parse_postfix which wraps
-            # the call as a FunctionCall node.
-            expr = self._parse_expression()
-            self._expect(TokenType.NEWLINE, 'Expected a new line after the expression.')
-            return expr
+            # Generic fallback for other keywords at statement position.
+            raise _ParseError(
+                tok.line,
+                f'I didn\'t expect "{tok.value}" here.',
+                tok.source_line,
+            )
 
-        # Other expression-starting tokens (NUMBER, STRING, LPAREN, LBRACKET, LBRACE)
-        # Parse the full expression and consume the trailing NEWLINE.
-        expr = self._parse_expression()
-        self._expect(TokenType.NEWLINE, 'Expected a new line after the expression.')
-        return expr
+        # ---- IDENTIFIER-led statements ----
+        if tok.type == TokenType.IDENTIFIER:
+            # Python-ism redirect: "def" → suggest "function" (D-04 item 1)
+            if tok.value == "def":
+                raise _ParseError(
+                    tok.line,
+                    'Atena uses "function", not "def" — try: function greet(name).',
+                    tok.source_line,
+                )
+            # Python-ism redirect: "elif" → nested if/else (D-04 item 1)
+            if tok.value == "elif":
+                raise _ParseError(
+                    tok.line,
+                    'Atena doesn\'t have elif — use a nested if/else inside the else.',
+                    tok.source_line,
+                )
+            # Python-ism redirect: "for" → repeat/while (D-04 item 1)
+            if tok.value == "for":
+                raise _ParseError(
+                    tok.line,
+                    'Atena loops with "repeat N times" or "while" — there\'s no "for" loop.',
+                    tok.source_line,
+                )
+            # Python-ism redirect: "class" → Atena has no classes (D-04 item 1)
+            if tok.value == "class":
+                raise _ParseError(
+                    tok.line,
+                    'Atena doesn\'t have classes — it\'s for step-by-step logic, not objects.',
+                    tok.source_line,
+                )
+            # Python-ism redirect: "import" → single-file program (D-04 item 1)
+            if tok.value == "import":
+                raise _ParseError(
+                    tok.line,
+                    'An Atena program is a single file — there\'s nothing to import.',
+                    tok.source_line,
+                )
+            # Assignment: IDENTIFIER followed by ASSIGN → assignment statement.
+            if self._peek().type == TokenType.ASSIGN:
+                return self._parse_assignment()
+            # Otherwise: bare expression statement (e.g. a bare function call).
+            return self._parse_expression_statement()
+
+        # ---- Anything else is unexpected at statement position ----
+        raise _ParseError(
+            tok.line,
+            f'I didn\'t expect "{tok.value}" here.',
+            tok.source_line,
+        )
 
     # -----------------------------------------------------------------------
     # Public entry point
