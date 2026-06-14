@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-02-PLAN.md — core construct emitters GREEN
-last_updated: "2026-06-14T20:20:44.136Z"
+stopped_at: Completed 04-04-PLAN.md — edge-case battery GREEN (236 tests passing)
+last_updated: "2026-06-14T20:28:05.160Z"
 last_activity: 2026-06-14
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
   percent: 57
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 04 (code-generator) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-06-14
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [██████████] 95%
 | Phase 04-code-generator P01 | 30 | 2 tasks | 5 files |
 | Phase 04 P02 | 9 | 2 tasks | 3 files |
 | Phase 04-code-generator P03 | 8 | 2 tasks | 2 files |
+| Phase 04-code-generator P04 | 4 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,7 @@ Recent decisions affecting current work:
 - [04-01]: CodeGenerator receives no ErrorCollector — driver gates on errors.is_empty() before calling generate() (GEN-03)
 - [04-01]: Keyword mangling test uses "pass" (valid Atena variable name, Python hard keyword) not "class" (caught by parser Python-ism redirect before codegen)
 - [Phase ?]: [04-02]: Arithmetic ops (-,*,/) return 'number' type in analyzer -- compound expressions like 2+(3*4) don't route through _atena_concat
+- [Phase ?]: _mangle() tested directly for class/import (Python-ism redirects): pipeline_blocked set is authoritative filter for all-keywords test
 
 ### Pending Todos
 
@@ -150,6 +152,6 @@ Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: n
 
 ## Session Continuity
 
-Last session: 2026-06-14T20:20:44.132Z
-Stopped at: Completed 04-02-PLAN.md — core construct emitters GREEN
+Last session: 2026-06-14T20:28:05.155Z
+Stopped at: Completed 04-04-PLAN.md — edge-case battery GREEN (236 tests passing)
 Resume file: None

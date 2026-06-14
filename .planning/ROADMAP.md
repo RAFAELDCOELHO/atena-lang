@@ -175,7 +175,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-04-PLAN.md — Edge-case battery: keyword mangling, nested-repeat unique loop vars, helper execution tests, verbatim-emission discipline (GEN-04, GEN-05)
+- [x] 04-04-PLAN.md — Edge-case battery: keyword mangling, nested-repeat unique loop vars, helper execution tests, verbatim-emission discipline (GEN-04, GEN-05)
 
 **Wave 5** *(blocked on Wave 4 completion — has human checkpoint)*
 
@@ -220,6 +220,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
-| 4. Code Generator | 3/5 | In Progress|  |
+| 4. Code Generator | 4/5 | In Progress|  |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
