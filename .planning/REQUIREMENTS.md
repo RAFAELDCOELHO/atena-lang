@@ -57,7 +57,7 @@ The analyzer owns every semantic decision; the generator emits verbatim.
 - [x] **GEN-03**: Generator runs only when zero errors were collected; if any error exists, it emits no Python
 - [x] **GEN-04**: Generator produces correctly-indented Python, uses a unique loop variable per nested `repeat`, and mangles Atena identifiers that collide with Python keywords
 - [x] **GEN-05**: Every generated program passes an internal `ast.parse()` self-check; invalid output is an internal bug surfaced in tests, never shown to the learner
-- [ ] **GEN-06**: Generator reproduces the spec's golden example (`school.atena`) exactly, matching the expected Python output
+- [x] **GEN-06**: Generator reproduces the spec's golden example (`school.atena`) exactly, matching the expected Python output
 
 ### CLI & Runtime
 
@@ -150,7 +150,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | GEN-03 | Phase 4 | Complete |
 | GEN-04 | Phase 4 | Complete |
 | GEN-05 | Phase 4 | Complete |
-| GEN-06 | Phase 4 | Pending |
+| GEN-06 | Phase 4 | Complete |
 | CLI-01 | Phase 5 | Pending |
 | CLI-02 | Phase 5 | Pending |
 | CLI-03 | Phase 5 | Pending |

@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Lexer** - Source → balanced token stream with INDENT/DEDENT, blank/comment skipping, tab-space policy (completed 2026-06-13)
 - [x] **Phase 2: Parser** - Token stream → AST honoring the precedence ladder, with syntax-error recovery (completed 2026-06-14)
 - [x] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision (completed 2026-06-14)
-- [ ] **Phase 4: Code Generator** - Analyzed AST → valid, runnable Python 3, emitted verbatim, with `ast.parse()` self-check
+- [x] **Phase 4: Code Generator** - Analyzed AST → valid, runnable Python 3, emitted verbatim, with `ast.parse()` self-check (completed 2026-06-14)
 - [ ] **Phase 5: CLI Runtime & Pipeline Integration** - `atena run` / `atena build` wired end-to-end with plain-English runtime errors
 - [ ] **Phase 6: Packaging & Curriculum** - Pip-installable entry point, concept-ladder examples, getting-started README
 
@@ -179,7 +179,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion — has human checkpoint)*
 
-- [ ] 04-05-PLAN.md — Golden school.atena + derived school.expected.py + targeted fixture battery + human review checkpoint (GEN-01, GEN-02, GEN-03, GEN-04, GEN-05, GEN-06)
+- [x] 04-05-PLAN.md — Golden school.atena + derived school.expected.py + targeted fixture battery + human review checkpoint (GEN-01, GEN-02, GEN-03, GEN-04, GEN-05, GEN-06)
 
 ### Phase 5: CLI Runtime & Pipeline Integration
 
@@ -220,6 +220,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 1. Lexer | 3/3 | Complete   | 2026-06-13 |
 | 2. Parser | 5/5 | Complete   | 2026-06-14 |
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
-| 4. Code Generator | 4/5 | In Progress|  |
+| 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
 | 5. CLI Runtime & Pipeline Integration | 0/TBD | Not started | - |
 | 6. Packaging & Curriculum | 0/TBD | Not started | - |
