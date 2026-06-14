@@ -641,6 +641,34 @@ def test_P2_unclosed_bracket():
     assert '"]"' in report or "]" in report
 
 
+def test_P2_trailing_tokens_after_assignment_rejected():
+    """'x = a b' is rejected and no half-parsed Assign leaks into the AST (WR-01).
+
+    A complete value ('a') followed by a dangling token ('b') is not a valid
+    statement. The terminator check must raise BEFORE the Assign node is
+    returned, so program.statements stays empty and an error is reported.
+    """
+    program, ec = _parse("x = a b\n")
+    assert not ec.is_empty()
+    # No partial Assign node may leak into the program — a returned statement
+    # must be a *valid* statement.
+    assert all(not isinstance(s, Assign) for s in program.statements)
+    assert program.statements == []
+    report = ec.report()
+    assert "Error on line 1" in report
+    assert "end of this line" in report
+
+
+def test_P2_trailing_tokens_after_show_rejected():
+    """'show x y' is rejected and no half-parsed Show leaks into the AST (WR-01)."""
+    program, ec = _parse("show x y\n")
+    assert not ec.is_empty()
+    assert all(not isinstance(s, Show) for s in program.statements)
+    assert program.statements == []
+    report = ec.report()
+    assert "end of this line" in report
+
+
 # ---------------------------------------------------------------------------
 # Layer 3 — Cross-requirement tests (progress invariant, multi-error collection)
 # ---------------------------------------------------------------------------

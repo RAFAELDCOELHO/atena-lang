@@ -415,15 +415,31 @@ class Parser:
     # Statement-level helpers
     # -----------------------------------------------------------------------
 
-    def _consume_newline(self) -> None:
-        """Consume a NEWLINE token if present; do nothing at DEDENT/EOF.
+    def _end_statement(self) -> None:
+        """Require a statement terminator: a NEWLINE, or a block/stream boundary.
 
-        Block-final statements may not have a trailing NEWLINE before the
-        DEDENT token. This avoids failing on syntactically valid programs where
-        the trailing NEWLINE was consumed by the block parser or is absent.
+        Consumes a trailing NEWLINE if present. A DEDENT or EOF is also a valid
+        terminator: block-final and file-final statements may have their NEWLINE
+        already consumed by the block parser, or absent at end of input.
+
+        Any *other* leftover token means the line did not actually end — e.g.
+        'x = a b' parses 'a' as a complete value but leaves 'b' dangling. Rather
+        than silently accept the half-parsed statement (which would leak a wrong
+        AST node into program.statements and then emit a confusing secondary
+        error on the leftover token), raise a _ParseError here so synchronize
+        fires and no partial node is returned (WR-01).
         """
         if self._check(TokenType.NEWLINE):
             self._advance()
+            return
+        if self._check(TokenType.DEDENT, TokenType.EOF):
+            return  # block-final / file-final: terminator already consumed/absent
+        tok = self._current()
+        raise _ParseError(
+            tok.line,
+            f'I didn\'t expect "{tok.value}" after the end of this line.',
+            tok.source_line,
+        )
 
     # -----------------------------------------------------------------------
     # Statement parser methods (Plan 03)
@@ -433,23 +449,8 @@ class Parser:
         """Parse: show <expression>"""
         kw = self._advance()   # consume "show"
         value = self._parse_expression()
-        # "ask" inside "show" is a D-02 misuse — detect it here via _parse_expression
-        # which will have already called _parse_primary; by the time we get back the
-        # "ask" would have been treated as an unknown keyword in expression position and
-        # raised a _ParseError. That error message from _parse_primary may not be D-02
-        # specific, so we handle "ask" appearing as a keyword inside expression by
-        # checking: if the current primary was "ask" we raise a D-02 error. However,
-        # since "ask" is a KEYWORD and _parse_primary only matches specific keywords
-        # (true, false, length), an "ask" in expression position will fall through to
-        # the _ParseError branch in _parse_primary. That error message is generic.
-        # D-02 redirect for ask-in-show is tested (test_P2_ask_misused_in_show): the
-        # test only checks that "save" or "answer" appears in the report, which the
-        # generic D-02 message satisfies. The _parse_primary error for an unexpected
-        # keyword will raise a _ParseError with the generic message. To ensure D-02
-        # redirect fires for "ask" in expression position, we override _parse_primary
-        # for the "ask" keyword below in _parse_primary_with_ask_guard; here we just
-        # parse normally — the guard is in _parse_primary itself.
-        self._consume_newline()
+        # 'ask' in expression position is redirected by _parse_primary (see :357).
+        self._end_statement()
         return Show(value=value, line=kw.line, source_line=kw.source_line)
 
     def _parse_ask(self, target: str, line: int, source_line: str) -> Ask:
@@ -465,7 +466,7 @@ class Parser:
                 kw.source_line,
             )
         prompt_tok = self._advance()   # consume STRING token
-        self._consume_newline()
+        self._end_statement()
         return Ask(prompt=prompt_tok.value, target=target, line=line, source_line=source_line)
 
     def _parse_assignment(self) -> Assign | Ask:
@@ -483,7 +484,7 @@ class Parser:
                 source_line=name_tok.source_line,
             )
         value = self._parse_expression()
-        self._consume_newline()
+        self._end_statement()
         return Assign(
             name=name_tok.value,
             value=value,
@@ -495,13 +496,13 @@ class Parser:
         """Parse: if <condition> NEWLINE INDENT <body> DEDENT [else NEWLINE INDENT <body> DEDENT]"""
         kw = self._advance()   # consume "if"
         condition = self._parse_expression()
-        self._consume_newline()
+        self._end_statement()
         then_body = self._parse_block()
         else_body: list[Node] = []
         # Optional else clause: only if current token is the "else" keyword.
         if self._check(TokenType.KEYWORD) and self._current().value == "else":
             self._advance()   # consume "else"
-            self._consume_newline()
+            self._end_statement()
             else_body = self._parse_block()
         return If(
             condition=condition,
@@ -515,7 +516,7 @@ class Parser:
         """Parse: while <condition> NEWLINE INDENT <body> DEDENT"""
         kw = self._advance()   # consume "while"
         condition = self._parse_expression()
-        self._consume_newline()
+        self._end_statement()
         body = self._parse_block()
         return While(condition=condition, body=body, line=kw.line, source_line=kw.source_line)
 
@@ -532,7 +533,7 @@ class Parser:
                 tok.source_line,
             )
         self._advance()   # consume "times"
-        self._consume_newline()
+        self._end_statement()
         body = self._parse_block()
         return Repeat(count=count, body=body, line=kw.line, source_line=kw.source_line)
 
@@ -547,7 +548,7 @@ class Parser:
             while self._match(TokenType.COMMA):
                 params.append(self._expect(TokenType.IDENTIFIER, 'Expected a parameter name after ",".').value)
         self._expect(TokenType.RPAREN, 'I reached the end of the line still waiting for a ")".')
-        self._consume_newline()
+        self._end_statement()
         # Track function nesting depth for top-level return check (D-04 item 3).
         # fn_depth is decremented in finally so it stays consistent even if body
         # parsing raises _ParseError (T-02-09).
@@ -570,7 +571,7 @@ class Parser:
         if self._fn_depth == 0:
             raise _ParseError(kw.line, '"return" only works inside a function.', kw.source_line)
         value = self._parse_expression()
-        self._consume_newline()
+        self._end_statement()
         return Return(value=value, line=kw.line, source_line=kw.source_line)
 
     def _parse_list_add(self) -> ListAdd:
@@ -587,7 +588,7 @@ class Parser:
             )
         self._advance()   # consume "to"
         target_tok = self._expect(TokenType.IDENTIFIER, 'Expected a list name after "to".')
-        self._consume_newline()
+        self._end_statement()
         return ListAdd(target=target_tok.value, value=value, line=kw.line, source_line=kw.source_line)
 
     def _parse_list_remove(self) -> ListRemove:
@@ -604,7 +605,7 @@ class Parser:
             )
         self._advance()   # consume "from"
         target_tok = self._expect(TokenType.IDENTIFIER, 'Expected a list name after "from".')
-        self._consume_newline()
+        self._end_statement()
         return ListRemove(target=target_tok.value, value=value, line=kw.line, source_line=kw.source_line)
 
     def _parse_expression_statement(self) -> Node:
@@ -629,7 +630,7 @@ class Parser:
                 f'I didn\'t expect "{self._tokens[self._pos - 1].value if self._pos > 0 else "?"}" here.',
                 expr.source_line,
             )
-        self._consume_newline()
+        self._end_statement()
         return expr
 
     # -----------------------------------------------------------------------
