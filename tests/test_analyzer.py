@@ -191,8 +191,8 @@ def test_A1_variable_index_uses_atena_index_helper():
 
 
 def test_A1_ask_registers_str_type():
-    """'ask "name?" into answer; answer + "!" → right side NOT wrapped (both str, no coerce needed)."""
-    source = 'ask "name?" into answer\nx = answer + "!"\n'
+    """'answer = ask "name?"; answer + "!" → right side NOT wrapped (both str, no coerce needed)."""
+    source = 'answer = ask "What is your name?"\nx = answer + "!"\n'
     program, ec = _analyze(source)
     assert ec.is_empty()
     assign = program.statements[1]
@@ -292,8 +292,8 @@ def test_A2_wrong_arity_too_many():
 
 
 def test_A2_wrong_arity_too_few():
-    """Calling add(1) when add expects 2 args → 'expects 2' and 'gave 1' in report."""
-    source = "function add(a, b)\n    return a + b\nadd(1)\n"
+    """Calling combine(1) when combine expects 2 args → 'expects 2' and 'gave 1' in report."""
+    source = "function combine(a, b)\n    return a + b\ncombine(1)\n"
     _, ec = _analyze(source)
     assert not ec.is_empty()
     report = ec.report()

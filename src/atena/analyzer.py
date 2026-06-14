@@ -132,10 +132,12 @@ class SemanticAnalyzer:
         return "unknown"
 
     def visit_Ask(self, node: Ask) -> str:
-        """ask results are always typed str (D-03).
+        """Register the ask target as "str" in the current scope (D-03).
 
-        Symbol table registration (node.target → "str") is Plan 03 scope work.
+        ask results are always typed str because Python's input() returns text.
         """
+        scope = self._locals if self._locals is not None else self._globals
+        scope[node.target] = "str"
         return "unknown"
 
     def visit_If(self, node: If) -> str:
