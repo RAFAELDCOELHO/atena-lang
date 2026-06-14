@@ -694,6 +694,15 @@ class Parser:
                     'ask needs to save its answer into a name — try: answer = ask "What is your name?".',
                     tok.source_line,
                 )
+            # Python-ism redirect: "from" at statement position → "from os import sys"
+            # style. "from" lexes as a KEYWORD (used in "remove … from …"), so it
+            # reaches here when written at statement position without "remove" before it.
+            if kw_value == "from":
+                raise _ParseError(
+                    tok.line,
+                    'An Atena program is a single file — there\'s nothing to import.',
+                    tok.source_line,
+                )
             # Generic fallback for other keywords at statement position.
             raise _ParseError(
                 tok.line,
