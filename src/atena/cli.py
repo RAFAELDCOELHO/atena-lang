@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import traceback
 
 from atena.pipeline import transpile
 
@@ -109,6 +110,51 @@ def _internal_error_message(exc: BaseException) -> str:
     )
 
 
+def _runtime_error_message(exc: BaseException, source_lines: list[str]) -> str:
+    """Translate a learner-program runtime exception to a plain-English Atena message.
+
+    Uses the Python traceback to extract the best-effort line number (D-07),
+    then dispatches on the exception type (D-03 curated catalog) and formats
+    the result using the canonical D-05 format:
+        Error on line N: <message>
+          → <source_line>
+
+    Never surfaces raw exception class names, Python tracebacks, or the internal
+    "Something went wrong inside Atena" wording — those are reserved for transpiler
+    bugs caught by _internal_error_message() (D-04 split).
+    """
+    # --- Extract Python lineno from traceback (best-effort per D-07) ----------
+    tb_frames = traceback.extract_tb(exc.__traceback__)
+    python_lineno = tb_frames[-1].lineno if tb_frames else None
+
+    # --- Map to Atena source line for the → display ---------------------------
+    source_line = ""
+    if python_lineno is not None and 1 <= python_lineno <= len(source_lines):
+        source_line = source_lines[python_lineno - 1].strip()
+
+    # --- Best-effort line number display (D-07) --------------------------------
+    line_display: int | str = python_lineno if python_lineno is not None else "unknown"
+
+    # --- Dispatch on exception type (D-03 curated catalog) --------------------
+    if isinstance(exc, ZeroDivisionError):
+        message = "you tried to divide by zero — the denominator must not be 0."
+    elif isinstance(exc, KeyError):
+        key = exc.args[0] if exc.args else "unknown"
+        message = f"that dictionary doesn't have a key called {key!r}."
+    elif isinstance(exc, ValueError):
+        message = "that item wasn't in the list, so it couldn't be removed."
+    elif isinstance(exc, IndexError):
+        if "List positions in Atena start at 1" in str(exc):
+            message = "List positions in Atena start at 1, so there's no position 0 or a negative one."
+        else:
+            message = "that index is out of range — check how many items are in the list."
+    else:
+        # Generic fallback — no raw class name, no traceback (D-03, D-04)
+        message = "while running your program, an error occurred."
+
+    return f"Error on line {line_display}: {message}\n  → {source_line}"
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -154,14 +200,13 @@ def main() -> None:
             print(result)
     else:
         # run: exec the generated Python — wrap so no traceback reaches the learner
-        # TODO Plan 03: replace _internal_error_message with _runtime_error_message for learner errors (D-04)
         try:
             code = compile(result, args.file, "exec")
             exec(code, {"__name__": "__main__"})  # noqa: S102
         except SystemExit:
             raise
         except BaseException as exc:  # learner program runtime error
-            # Surface as a plain-English message (Plan 03 will refine this);
-            # never let a Python traceback escape.
-            print(_internal_error_message(exc), file=sys.stderr)
+            # Translate to plain-English canonical format (D-04/D-05).
+            # Never surface a raw Python traceback or class name.
+            print(_runtime_error_message(exc, source.splitlines()), file=sys.stderr)
             sys.exit(1)
