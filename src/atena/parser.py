@@ -45,6 +45,14 @@ _BINARY_BP: dict[str, int] = {
     "/":   5,
 }
 
+# Comparison operators. Atena does not support Python-style comparison
+# chaining (1 < 2 < 3): all comparisons share bp=3 and chain left-
+# associatively, so the AST would emit (1 < 2) < 3 → True < 3, which is NOT
+# what a learner intends and NOT what the equivalent Python source means.
+# Rather than silently mis-evaluate, the parser rejects a comparison whose
+# left operand is itself a comparison (WR-05).
+_COMPARISON_OPS: frozenset[str] = frozenset({"==", "!=", "<", ">", "<=", ">="})
+
 
 # ---------------------------------------------------------------------------
 # Internal control-flow exception
@@ -218,6 +226,16 @@ class Parser:
             if bp <= min_bp:
                 break
             self._advance()                        # consume the operator token
+            # Reject chained comparisons (1 < 2 < 3, a == b == c): if we are about
+            # to build a comparison and the left operand is already a comparison,
+            # the learner's intent (and the meaning of the equivalent Python) is
+            # silently lost. Emit a plain-English hint instead (WR-05).
+            if op_str in _COMPARISON_OPS and isinstance(left, BinOp) and left.op in _COMPARISON_OPS:
+                raise _ParseError(
+                    op_tok.line,
+                    'Compare two things at a time — write "1 < 2 and 2 < 3" instead of "1 < 2 < 3".',
+                    op_tok.source_line,
+                )
             right = self._parse_expression(bp)     # left-assoc: same bp for right
             left = BinOp(
                 op=op_str,

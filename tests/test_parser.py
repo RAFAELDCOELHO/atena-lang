@@ -713,6 +713,52 @@ def test_P2_trailing_tokens_after_show_rejected():
     assert "end of this line" in report
 
 
+def test_P2_chained_comparison_rejected():
+    """'x = 1 < 2 < 3' is rejected with a plain-English 'two at a time' hint (WR-05).
+
+    Atena has no Python-style comparison chaining; a chained comparison would
+    silently emit (1 < 2) < 3 → True < 3, a correctness trap. The parser must
+    reject it rather than accept it, and the message must guide the learner to
+    '1 < 2 and 2 < 3'. No partial Assign node may leak into the AST.
+    """
+    program, ec = _parse("x = 1 < 2 < 3\n")
+    assert not ec.is_empty()
+    assert program.statements == []
+    report = ec.report()
+    assert "Error on line 1" in report
+    # Plain-English guidance: split into two comparisons joined by 'and'.
+    assert "two things at a time" in report
+    assert "and" in report
+
+
+def test_P2_chained_equality_rejected():
+    """'x = a == b == c' is likewise rejected as a chained comparison (WR-05)."""
+    program, ec = _parse("x = a == b == c\n")
+    assert not ec.is_empty()
+    assert program.statements == []
+    assert "two things at a time" in ec.report()
+
+
+def test_P2_single_comparison_of_arithmetic_ok():
+    """'x = a + b == c + d' is a single comparison and must NOT trip the chain guard (WR-05)."""
+    program, ec = _parse("x = a + b == c + d\n")
+    assert ec.is_empty(), f"Unexpected error:\n{ec.report()}"
+    assert len(program.statements) == 1
+    val = program.statements[0].value
+    assert isinstance(val, BinOp)
+    assert val.op == "=="
+
+
+def test_P2_two_comparisons_joined_by_and_ok():
+    """'x = a == b and c == d' has two separate comparisons joined by 'and' — allowed (WR-05)."""
+    program, ec = _parse("x = a == b and c == d\n")
+    assert ec.is_empty(), f"Unexpected error:\n{ec.report()}"
+    assert len(program.statements) == 1
+    val = program.statements[0].value
+    assert isinstance(val, BinOp)
+    assert val.op == "and"
+
+
 # ---------------------------------------------------------------------------
 # Layer 3 — Cross-requirement tests (progress invariant, multi-error collection)
 # ---------------------------------------------------------------------------
