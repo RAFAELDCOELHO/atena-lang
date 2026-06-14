@@ -190,15 +190,227 @@ class Parser:
                 self._advance()
 
     # -----------------------------------------------------------------------
-    # Statement dispatcher (stub — Plan 03 fills in the full dispatch)
+    # Expression parser (Pratt precedence-climbing)
+    # -----------------------------------------------------------------------
+
+    def _parse_expression(self, min_bp: int = 0) -> Node:
+        """Pratt expression parser entry point.
+
+        Implements precedence-climbing using _BINARY_BP. Calls _parse_unary()
+        to get the left operand, then loops consuming binary operators whose
+        binding power exceeds min_bp.
+
+        Left-associativity: right operand is parsed with min_bp=bp (not bp-1).
+        This means an operator of the same precedence on the right is NOT
+        absorbed (bp > min_bp is false when equal), giving left-association.
+        Verified: "10 - 3 - 2" → second "-" has bp=4, right call runs with
+        min_bp=4, 4 > 4 is false, so it cannot absorb the second "-".
+        (PITFALLS.md §8)
+        """
+        left = self._parse_unary()
+        while True:
+            op_tok = self._current()
+            # Determine the operator string from the current token.
+            # OPERATOR/COMPARISON tokens carry the value directly ("+" "==" etc.).
+            # KEYWORD tokens for "and"/"or" also use their value.
+            op_str = op_tok.value
+            bp = _BINARY_BP.get(op_str, 0)
+            if bp <= min_bp:
+                break
+            self._advance()                        # consume the operator token
+            right = self._parse_expression(bp)     # left-assoc: same bp for right
+            left = BinOp(
+                op=op_str,
+                left=left,
+                right=right,
+                line=op_tok.line,
+                source_line=op_tok.source_line,
+            )
+        return left
+
+    def _parse_unary(self) -> Node:
+        """Parse unary 'not' and unary '-', then fall through to postfix loop.
+
+        'not' is right-recursive: 'not not x' is valid.
+        Unary '-' binds tighter than any binary op — only applies to the
+        immediate primary+postfix (PITFALLS.md §7).
+        """
+        tok = self._current()
+        if tok.type == TokenType.KEYWORD and tok.value == "not":
+            self._advance()
+            operand = self._parse_unary()   # right-recursive
+            return UnaryOp(
+                op="not",
+                operand=operand,
+                line=tok.line,
+                source_line=tok.source_line,
+            )
+        if tok.type == TokenType.OPERATOR and tok.value == "-":
+            self._advance()
+            # Unary minus binds tightest — only to immediate primary+postfix,
+            # never absorbs a binary op on the right.
+            operand = self._parse_postfix(self._parse_primary())
+            return UnaryOp(
+                op="-",
+                operand=operand,
+                line=tok.line,
+                source_line=tok.source_line,
+            )
+        return self._parse_postfix(self._parse_primary())
+
+    def _parse_postfix(self, node: Node) -> Node:
+        """Tight postfix loop for [] . () — left-associative, highest binding (PITFALLS.md §9).
+
+        Loops consuming [] (subscript), . (field), and () (call) until none match.
+        IndexAccess is always constructed with index_converted=False — the
+        semantic analyzer sets it to True during the 1→0 rewrite (Pitfall 8/T-02-08).
+        """
+        while True:
+            tok = self._current()
+            if tok.type == TokenType.LBRACKET:
+                self._advance()   # consume '['
+                index = self._parse_expression()
+                self._expect(TokenType.RBRACKET, 'I reached the end of the line still waiting for a "]".')
+                node = IndexAccess(
+                    target=node,
+                    index=index,
+                    index_converted=False,
+                    line=tok.line,
+                    source_line=tok.source_line,
+                )
+            elif tok.type == TokenType.DOT:
+                self._advance()   # consume '.'
+                name_tok = self._expect(TokenType.IDENTIFIER, 'Expected a field name after ".".')
+                node = DotAccess(
+                    target=node,
+                    name=name_tok.value,
+                    line=tok.line,
+                    source_line=tok.source_line,
+                )
+            elif tok.type == TokenType.LPAREN:
+                self._advance()   # consume '('
+                args: list[Node] = []
+                if not self._check(TokenType.RPAREN):
+                    args.append(self._parse_expression())
+                    while self._match(TokenType.COMMA):
+                        args.append(self._parse_expression())
+                self._expect(TokenType.RPAREN, 'I reached the end of the line still waiting for a ")".')
+                if isinstance(node, Identifier):
+                    node = FunctionCall(
+                        name=node.name,
+                        args=args,
+                        line=tok.line,
+                        source_line=tok.source_line,
+                    )
+                else:
+                    raise _ParseError(tok.line, 'Only named functions can be called.', tok.source_line)
+            else:
+                break
+        return node
+
+    def _parse_primary(self) -> Node:
+        """Parse a primary atom: literal, identifier, grouped expression, or list/dict literal.
+
+        Dispatches on the current token type. Raises _ParseError for unexpected tokens.
+        String token values are already bare content (lexer strips outer quotes).
+        """
+        tok = self._current()
+
+        if tok.type == TokenType.NUMBER:
+            self._advance()
+            return NumberLiteral(value=int(tok.value), line=tok.line, source_line=tok.source_line)
+
+        if tok.type == TokenType.STRING:
+            self._advance()
+            # The lexer strips the outer double-quotes; tok.value is the bare content.
+            return StringLiteral(value=tok.value, line=tok.line, source_line=tok.source_line)
+
+        if tok.type == TokenType.KEYWORD and tok.value == "true":
+            self._advance()
+            return BoolLiteral(value=True, line=tok.line, source_line=tok.source_line)
+
+        if tok.type == TokenType.KEYWORD and tok.value == "false":
+            self._advance()
+            return BoolLiteral(value=False, line=tok.line, source_line=tok.source_line)
+
+        if tok.type == TokenType.KEYWORD and tok.value == "length":
+            # 'length' is a prefix keyword: consumes only the immediately following primary.
+            # Maps to FunctionCall(name="length", args=[operand]) for codegen → len().
+            self._advance()
+            operand = self._parse_primary()   # length binds tightest — only immediate primary
+            return FunctionCall(
+                name="length",
+                args=[operand],
+                line=tok.line,
+                source_line=tok.source_line,
+            )
+
+        if tok.type == TokenType.IDENTIFIER:
+            self._advance()
+            return Identifier(name=tok.value, line=tok.line, source_line=tok.source_line)
+
+        if tok.type == TokenType.LPAREN:
+            self._advance()   # consume '('
+            expr = self._parse_expression()
+            self._expect(TokenType.RPAREN, 'I reached the end of the line still waiting for a ")".')
+            return expr
+
+        if tok.type == TokenType.LBRACKET:
+            return self._parse_list_literal()
+
+        if tok.type == TokenType.LBRACE:
+            return self._parse_dict_literal()
+
+        raise _ParseError(tok.line, f'I didn\'t expect "{tok.value}" here.', tok.source_line)
+
+    def _parse_list_literal(self) -> ListLiteral:
+        """Parse a list literal: [elem, elem, …]."""
+        tok = self._expect(TokenType.LBRACKET, 'Expected "[" to start a list.')
+        elements: list[Node] = []
+        if not self._check(TokenType.RBRACKET):
+            elements.append(self._parse_expression())
+            while self._match(TokenType.COMMA):
+                elements.append(self._parse_expression())
+        self._expect(TokenType.RBRACKET, 'I reached the end of the line still waiting for a "]".')
+        return ListLiteral(elements=elements, line=tok.line, source_line=tok.source_line)
+
+    def _parse_dict_literal(self) -> DictLiteral:
+        """Parse a dict literal: {key = value, …}.
+
+        Atena's dict literal uses = (ASSIGN) as the key-value separator.
+        Keys are bare identifiers; values are arbitrary expressions.
+        """
+        tok = self._expect(TokenType.LBRACE, 'Expected "{" to start a dictionary.')
+        pairs: list[tuple[str, Node]] = []
+        if not self._check(TokenType.RBRACE):
+            key_tok = self._expect(TokenType.IDENTIFIER, 'Expected a key name in the dictionary.')
+            self._expect(TokenType.ASSIGN, 'Expected "=" after the key name in the dictionary.')
+            val = self._parse_expression()
+            pairs.append((key_tok.value, val))
+            while self._match(TokenType.COMMA):
+                key_tok = self._expect(TokenType.IDENTIFIER, 'Expected a key name in the dictionary.')
+                self._expect(TokenType.ASSIGN, 'Expected "=" after the key name.')
+                val = self._parse_expression()
+                pairs.append((key_tok.value, val))
+        self._expect(TokenType.RBRACE, 'I reached the end of the line still waiting for a "}".')
+        return DictLiteral(pairs=pairs, line=tok.line, source_line=tok.source_line)
+
+    # -----------------------------------------------------------------------
+    # Statement dispatcher (minimal — Plan 03 fills in the full dispatch)
     # -----------------------------------------------------------------------
 
     def _dispatch_statement(self) -> Node | None:
-        """STUB: consume NEWLINE tokens and return None; return None at EOF.
+        """Minimal statement dispatcher: handles assignment and bare expression statements.
 
-        Plan 03 replaces this with the full statement dispatch. For now the
-        only purpose is to let parse() terminate cleanly on empty input so
-        test_Px_empty_program passes in the RED phase.
+        Plan 03 replaces this with the full statement dispatch (show, ask, if,
+        while, repeat, function, return, add, remove, Python-ism redirects).
+
+        Currently handles:
+        - NEWLINE: skip blank lines.
+        - EOF: terminate cleanly.
+        - IDENTIFIER ASSIGN expr NEWLINE → Assign node.
+        - IDENTIFIER LPAREN ... RPAREN NEWLINE → FunctionCall node (bare call stmt).
+        - Any other expression starting token → parse expression and expect NEWLINE.
         """
         # Skip blank lines (NEWLINE without content)
         if self._check(TokenType.NEWLINE):
@@ -207,10 +419,35 @@ class Parser:
         # At EOF — terminate cleanly
         if self._at_end():
             return None
-        # Any other token: consume it (skeleton progress) and return None.
-        # Plan 03 will replace this with real dispatch logic.
-        self._advance()
-        return None
+
+        tok = self._current()
+
+        # IDENTIFIER-led dispatch: could be assignment (x = expr) or bare call (x(...))
+        if tok.type == TokenType.IDENTIFIER:
+            # Peek ahead: if next token is ASSIGN, this is an assignment statement.
+            if self._peek().type == TokenType.ASSIGN:
+                name_tok = self._advance()   # consume identifier
+                self._advance()              # consume '='
+                value = self._parse_expression()
+                self._expect(TokenType.NEWLINE, f'Expected a new line after the assignment.')
+                return Assign(
+                    name=name_tok.value,
+                    value=value,
+                    line=name_tok.line,
+                    source_line=name_tok.source_line,
+                )
+            # Otherwise: parse as a bare expression (e.g. greet() or greet("Ana", 5)).
+            # _parse_expression will call _parse_unary → _parse_postfix which wraps
+            # the call as a FunctionCall node.
+            expr = self._parse_expression()
+            self._expect(TokenType.NEWLINE, 'Expected a new line after the expression.')
+            return expr
+
+        # Other expression-starting tokens (NUMBER, STRING, LPAREN, LBRACKET, LBRACE)
+        # Parse the full expression and consume the trailing NEWLINE.
+        expr = self._parse_expression()
+        self._expect(TokenType.NEWLINE, 'Expected a new line after the expression.')
+        return expr
 
     # -----------------------------------------------------------------------
     # Public entry point
