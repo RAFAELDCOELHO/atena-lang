@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atena — Programming for everyone.</title>
+<meta name="description" content="Atena is a language that teaches you to think like a programmer — without the symbols that get in the way.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d1117">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://atena-lang.org">
+<meta property="og:title" content="Atena — Programming for everyone.">
+<meta property="og:description" content="Atena is a language that teaches you to think like a programmer — without the symbols that get in the way.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Atena — Programming for everyone.">
+<meta name="twitter:description" content="Atena is a language that teaches you to think like a programmer — without the symbols that get in the way.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230d1117'/%3E%3Ctext%20x='16'%20y='23'%20font-family='monospace'%20font-size='21'%20font-weight='700'%20fill='%23f0b429'%20text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --inset: #010409;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-2: #8b949e;
+    --accent: #f0b429;
+    --accent-h: #f7c948;
+    --red: #f85149;
+    --green: #3fb950;
+
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --maxw: 720px;
+    --r-card: 8px;
+    --r-code: 6px;
+    --r-btn: 4px;
+
+    --pad-x: clamp(1.25rem, 5vw, 2rem);
+    --section-y: clamp(3rem, 8vw, 6rem);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, p, ol, ul { margin: 0; }
+  ol, ul { padding: 0; }
+
+  a { color: var(--accent); }
+
+  ::selection { background: rgba(240, 180, 41, 0.24); color: var(--text); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---- Layout primitives ---- */
+  .container {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: var(--pad-x);
+  }
+
+  .section { padding-block: var(--section-y); }
+
+  .block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(1.5rem, 4vw, 2.25rem);
+    width: 100%;
+  }
+
+  /* ---- Typography roles ---- */
+  .h1 {
+    font-size: clamp(2.5rem, 6vw + 1rem, 4rem);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+
+  .h2 {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .lead {
+    font-size: clamp(1.1rem, 1.4vw + 0.7rem, 1.35rem);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text-2);
+    max-width: 48ch;
+  }
+
+  .body {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 62ch;
+  }
+
+  .note { font-size: 0.9rem; color: var(--text-2); }
+
+  /* ---- Skip link ---- */
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 100;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--r-btn);
+    text-decoration: none;
+    transition: top 0.16s ease-out;
+  }
+  .skip-link:focus { top: 1rem; }
+
+  /* ---- Header / nav ---- */
+  .site-header { border-bottom: 1px solid var(--border); }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 1.1rem;
+  }
+  .wordmark {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .wordmark .dot { color: var(--accent); }
+  .nav__link {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav__link:hover { color: var(--accent); }
+
+  /* ---- Buttons ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.8rem 1.25rem;
+    border-radius: var(--r-btn);
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .btn--primary { background: var(--accent); color: var(--bg); }
+  .btn--primary:hover { background: var(--accent-h); }
+  .btn--ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn--ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ---- Hero ---- */
+  .hero { padding-block-start: clamp(3.5rem, 9vw, 7rem); }
+  .hero__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(1.1rem, 2.5vw, 1.6rem);
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+
+  /* ---- Code editor (hero, with line numbers) ---- */
+  .editor {
+    width: 100%;
+    margin-top: clamp(0.4rem, 1.5vw, 0.9rem);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-code);
+    padding: clamp(0.9rem, 3vw, 1.25rem) clamp(0.75rem, 2.5vw, 1rem);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: clamp(0.78rem, 2.8vw, 1rem);
+    line-height: 1.85;
+    -webkit-overflow-scrolling: touch;
+  }
+  .editor__code {
+    counter-reset: ln;
+    display: block;
+    min-width: max-content;
+  }
+  .ln { display: block; white-space: pre; }
+  .ln::before {
+    counter-increment: ln;
+    content: counter(ln);
+    display: inline-block;
+    width: 1.5ch;
+    margin-right: 1.1rem;
+    padding-right: 1rem;
+    border-right: 1px solid var(--border);
+    color: var(--text-2);
+    text-align: right;
+    user-select: none;
+  }
+  .kw { color: var(--accent); }
+  .str { color: var(--green); }
+  .op { color: var(--text-2); }
+
+  /* ---- Problem cards ---- */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-card);
+    padding: clamp(1.15rem, 3vw, 1.5rem);
+  }
+  .card p {
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  /* ---- Answer features ---- */
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.5rem, 6vw, 4rem);
+    width: 100%;
+  }
+  .feature {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  /* ---- Terminal (human error) ---- */
+  .term {
+    width: 100%;
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: var(--r-code);
+    padding: clamp(0.9rem, 3vw, 1.25rem);
+    font-family: var(--mono);
+    font-size: clamp(0.82rem, 2.5vw, 0.92rem);
+    line-height: 1.75;
+  }
+  .term__line + .term__line { margin-top: 0.15rem; }
+  .term .err { color: var(--red); font-weight: 600; }
+  .term .ok { color: var(--green); font-weight: 600; }
+  .term .muted { color: var(--text-2); }
+
+  /* ---- Inline code chip ---- */
+  .ic {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* ---- Install commands ---- */
+  #install { scroll-margin-top: 1.5rem; }
+  .install-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    width: 100%;
+  }
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-code);
+    padding: 0.7rem 0.85rem;
+    font-family: var(--mono);
+  }
+  .cmd code {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-size: clamp(0.8rem, 2.5vw, 0.92rem);
+    color: var(--text);
+    -webkit-overflow-scrolling: touch;
+  }
+  .cmd .prog { color: var(--accent); }
+  .copy {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r-btn);
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+  .copy.copied { color: var(--green); border-color: var(--green); }
+
+  /* ---- Concept ladder (signature) ---- */
+  .ladder {
+    list-style: none;
+    width: 100%;
+    border-left: 1px solid var(--border);
+    padding-left: clamp(1.25rem, 4vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.85rem, 2vw, 1.25rem);
+  }
+  .rung {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(0.85rem, 2.5vw, 1.25rem);
+  }
+  .rung__num {
+    flex: 0 0 auto;
+    min-width: 2.5ch;
+    text-align: right;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    color: var(--accent);
+    line-height: 1;
+  }
+  .rung__label {
+    font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .rung__hint {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    font-weight: 400;
+    color: var(--text-2);
+  }
+  .rung--cap {
+    margin-top: clamp(0.5rem, 2vw, 1rem);
+  }
+  .rung--cap .rung__num { font-weight: 700; }
+  .rung--cap .rung__label { font-weight: 700; }
+  .rung--cap .file { font-family: var(--mono); color: var(--accent); }
+
+  /* ---- For teachers ---- */
+  .section--teachers {
+    background: var(--surface);
+    border-block: 1px solid var(--border);
+  }
+
+  /* ---- Footer ---- */
+  .footer { border-top: 1px solid var(--border); }
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-2);
+  }
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ---- Reveal on scroll (progressive enhancement) ---- */
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+  .js .reveal.is-visible { opacity: 1; transform: none; }
+  .js .cards .card:nth-child(2) { transition-delay: 0.08s; }
+  .js .cards .card:nth-child(3) { transition-delay: 0.16s; }
+
+  /* ---- Custom scrollbars for code areas ---- */
+  .editor::-webkit-scrollbar,
+  .cmd code::-webkit-scrollbar { height: 8px; }
+  .editor::-webkit-scrollbar-thumb,
+  .cmd code::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (min-width: 768px) {
+    .cards { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .js .reveal { opacity: 1; transform: none; transition: none; }
+    .skip-link { transition: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="container">
+    <nav class="nav" aria-label="Primary">
+      <a class="wordmark" href="#top">Atena<span class="dot">.</span></a>
+      <a class="nav__link" href="https://github.com/RAFAELDCOELHO/atena-lang">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 1. HERO -->
+  <section class="section hero">
+    <div class="container">
+      <div class="hero__inner">
+        <h1 class="h1 reveal">Programming for everyone.</h1>
+        <p class="lead reveal">Atena is a language that teaches you to think like a programmer — without the symbols that get in the way.</p>
+        <div class="hero__actions reveal">
+          <a class="btn btn--primary" href="#install">Get started →</a>
+          <a class="btn btn--ghost" href="https://github.com/RAFAELDCOELHO/atena-lang">View on GitHub</a>
+        </div>
+        <div class="editor reveal" role="img" aria-label="An Atena program: name equals ask &quot;What is your name?&quot;. If name equals &quot;Ada&quot;, show &quot;A legendary name.&quot;, otherwise show &quot;Hello, &quot; plus name plus &quot;!&quot;.">
+          <div class="editor__code" aria-hidden="true"><span class="ln">name <span class="op">=</span> <span class="kw">ask</span> <span class="str">"What is your name? "</span></span><span class="ln"><span class="kw">if</span> name <span class="op">==</span> <span class="str">"Ada"</span></span><span class="ln">    <span class="kw">show</span> <span class="str">"A legendary name."</span></span><span class="ln"><span class="kw">else</span></span><span class="ln">    <span class="kw">show</span> <span class="str">"Hello, "</span> <span class="op">+</span> name <span class="op">+</span> <span class="str">"!"</span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. THE PROBLEM -->
+  <section class="section" aria-labelledby="problem-title">
+    <div class="container">
+      <div class="block">
+        <h2 class="h2 reveal" id="problem-title">Most languages punish beginners.</h2>
+        <div class="cards">
+          <div class="card reveal">
+            <p>Colons. Braces. Semicolons. Syntax noise that has nothing to do with thinking.</p>
+          </div>
+          <div class="card reveal">
+            <p>Stack traces 40 lines long. One typo, total confusion.</p>
+          </div>
+          <div class="card reveal">
+            <p>You learn to copy-paste, not to think algorithmically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. ATENA'S ANSWER -->
+  <section class="section">
+    <div class="container">
+      <div class="features">
+        <div class="feature reveal">
+          <h2 class="h2">No noise</h2>
+          <p class="body">No colons, no braces, no semicolons. Indentation structures your code — the way you already think.</p>
+        </div>
+        <div class="feature reveal">
+          <h2 class="h2">Human errors</h2>
+          <div class="term">
+            <p class="term__line"><span class="err">Error</span> on line 3: I don't know what "scroe" is yet.</p>
+            <p class="term__line"><span class="ok">Did you mean</span> "score"?</p>
+            <p class="term__line muted">→ show "Your score: " + scroe</p>
+          </div>
+        </div>
+        <div class="feature reveal">
+          <h2 class="h2">See the Python</h2>
+          <p class="body">Every Atena program translates to real Python. Run <code class="ic">atena build --show</code> to see the code you're growing toward.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. INSTALL -->
+  <section class="section" id="install" aria-labelledby="install-title">
+    <div class="container">
+      <div class="block">
+        <h2 class="h2 reveal" id="install-title">Start in 30 seconds</h2>
+        <div class="install-group reveal">
+          <div class="cmd">
+            <code><span class="prog">pip</span> install git+https://github.com/RAFAELDCOELHO/atena-lang</code>
+            <button class="copy" type="button" aria-label="Copy command">Copy</button>
+          </div>
+          <div class="cmd">
+            <code><span class="prog">atena</span> run examples/01-show.atena</code>
+            <button class="copy" type="button" aria-label="Copy command">Copy</button>
+          </div>
+          <p class="note">Requires Python 3.11+</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. CONCEPT LADDER -->
+  <section class="section" aria-labelledby="ladder-title">
+    <div class="container">
+      <div class="block">
+        <h2 class="h2 reveal" id="ladder-title">Learn one idea at a time.</h2>
+        <ol class="ladder reveal">
+          <li class="rung"><span class="rung__num">01</span><span class="rung__label">Output <span class="rung__hint">(<span class="kw">show</span>)</span></span></li>
+          <li class="rung"><span class="rung__num">02</span><span class="rung__label">Input <span class="rung__hint">(<span class="kw">ask</span>)</span></span></li>
+          <li class="rung"><span class="rung__num">03</span><span class="rung__label">Variables</span></li>
+          <li class="rung"><span class="rung__num">04</span><span class="rung__label">Conditionals</span></li>
+          <li class="rung"><span class="rung__num">05</span><span class="rung__label">While loops</span></li>
+          <li class="rung"><span class="rung__num">06</span><span class="rung__label">Repeat loops</span></li>
+          <li class="rung"><span class="rung__num">07</span><span class="rung__label">Functions</span></li>
+          <li class="rung"><span class="rung__num">08</span><span class="rung__label">Lists</span></li>
+          <li class="rung"><span class="rung__num">09</span><span class="rung__label">Dictionaries</span></li>
+          <li class="rung rung--cap"><span class="rung__num" aria-hidden="true">→</span><span class="rung__label"><span class="file">school.atena</span> <span class="rung__hint">(capstone)</span></span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. FOR TEACHERS -->
+  <section class="section section--teachers" aria-labelledby="teachers-title">
+    <div class="container">
+      <div class="block">
+        <h2 class="h2 reveal" id="teachers-title">Designed for the classroom</h2>
+        <p class="body reveal">Each concept is a standalone 50-minute lesson. Atena was built so that errors teach, not terrify. Your students will understand what went wrong — and how to fix it.</p>
+        <a class="btn btn--primary reveal" href="https://github.com/RAFAELDCOELHO/atena-lang">View on GitHub →</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 7. FOOTER -->
+<footer class="section footer">
+  <div class="container">
+    <div class="footer__inner">
+      <span>Atena v1.0 — MIT License</span>
+      <span>Built by Rafael D. Coelho</span>
+      <a href="https://github.com/RAFAELDCOELHO/atena-lang">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    /* Copy-to-clipboard */
+    document.querySelectorAll('.copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.parentElement.querySelector('code');
+        var text = code ? code.textContent : '';
+        function done() {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          btn.setAttribute('aria-label', 'Copied to clipboard');
+          setTimeout(function () {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+            btn.setAttribute('aria-label', 'Copy command');
+          }, 1600);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(fallback);
+        } else {
+          fallback();
+        }
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'absolute';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          done();
+        }
+      });
+    });
+
+    /* Reveal on scroll */
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var els = document.querySelectorAll('.reveal');
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-visible'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          en.target.classList.add('is-visible');
+          io.unobserve(en.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+</body>
+</html>
