@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Semantic Analyzer** - Coercion injection, 1→0 index rewrite, undefined/arity checks — owns every semantic decision (completed 2026-06-14)
 - [x] **Phase 4: Code Generator** - Analyzed AST → valid, runnable Python 3, emitted verbatim, with `ast.parse()` self-check (completed 2026-06-14)
 - [x] **Phase 5: CLI Runtime & Pipeline Integration** - `atena run` / `atena build` wired end-to-end with plain-English runtime errors (completed 2026-06-14)
-- [ ] **Phase 6: Packaging & Curriculum** - Pip-installable entry point, concept-ladder examples, getting-started README
+- [x] **Phase 6: Packaging & Curriculum** - Pip-installable entry point, concept-ladder examples, getting-started README (completed 2026-06-15)
 
 ## Phase Details
 
@@ -228,7 +228,7 @@ Plans:
 
 - [x] 06-01-PLAN.md — PKG-01: pyproject.toml metadata polish (version 1.0.0, readme, license, authors, classifiers) + repo-install verification
 - [x] 06-02-PLAN.md — DOCS-01: 9-rung concept-ladder examples (01-show through 09-dicts) + tests/test_examples.py execution tests
-- [ ] 06-03-PLAN.md — DOCS-02: Full getting-started README rewrite (hook, install, first-program walkthrough, verbs, error showcase, cheatsheet, examples pointer, for-teachers section)
+- [x] 06-03-PLAN.md — DOCS-02: Full getting-started README rewrite (hook, install, first-program walkthrough, verbs, error showcase, cheatsheet, examples pointer, for-teachers section)
 
 ## Progress
 
@@ -243,4 +243,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
 | 5. CLI Runtime & Pipeline Integration | 4/4 | Complete   | 2026-06-14 |
-| 6. Packaging & Curriculum | 2/3 | In Progress|  |
+| 6. Packaging & Curriculum | 3/3 | Complete   | 2026-06-15 |

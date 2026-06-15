@@ -75,7 +75,7 @@ The analyzer owns every semantic decision; the generator emits verbatim.
 ### Curriculum & Docs
 
 - [x] **DOCS-01**: `examples/` contains a concept-ladder of `.atena` programs (I/O → variables → conditionals → loops → functions → lists → dicts), including the golden `school.atena`
-- [ ] **DOCS-02**: A getting-started README explains installation, `atena run` / `atena build`, and the language basics
+- [x] **DOCS-02**: A getting-started README explains installation, `atena run` / `atena build`, and the language basics
 
 ## v2 Requirements
 
@@ -159,7 +159,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CLI-06 | Phase 5 | Complete |
 | PKG-01 | Phase 6 | Complete |
 | DOCS-01 | Phase 6 | Complete |
-| DOCS-02 | Phase 6 | Pending |
+| DOCS-02 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 42 total
