@@ -78,7 +78,7 @@ show "Result: " + result
 You meant to write `score`, but you wrote `result` instead. When you run it, Atena tells you:
 
 ```
-Error on line 2: I don't know what "result" is. Did you forget to create it?
+Error on line 2: I don't know what "result" is yet. Did you forget to create it first?
   → show "Result: " + result
 ```
 
@@ -120,7 +120,7 @@ product = 6 * 7
 quotient = 10 / 2
 ```
 
-Atena uses integers only (whole numbers). When you add a number to a string with `+`, Atena handles the conversion automatically.
+Atena uses integers only (whole numbers) — there are no decimals. Division always rounds down to a whole number, so `10 / 3` is `3` (not `3.33`). When you add a number to a string with `+`, Atena handles the conversion automatically.
 
 ### Comparisons
 
