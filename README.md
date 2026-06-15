@@ -1,5 +1,7 @@
 # Atena
 
+**[atena-lang.org](https://atena-lang.org)**
+
 Atena is a teaching language that removes all the punctuation noise — no colons, no braces — so you can focus on learning how programs think. It transpiles (converts) to Python 3, which means the code you write is real: it runs, it handles data, and it teaches you the algorithmic logic professionals use every day. The best part: `atena build --show` reveals the Python it generated, so you always know exactly what real language you are growing toward.
 
 Atena is for complete beginners who want to learn algorithmic logic without fighting syntax. If you have never written a line of code, this is your starting point.
