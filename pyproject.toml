@@ -4,8 +4,23 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atena-lang"
-version = "0.1.0"
+version = "1.0.0"
 description = "Atena: a teaching language that transpiles to Python 3"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "RAFAELDCOELHO" }]
+keywords = ["teaching", "education", "programming", "transpiler", "language"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Education",
+    "Topic :: Education",
+    "Topic :: Software Development :: Interpreters",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+]
 requires-python = ">=3.11"
 dependencies = []
 
