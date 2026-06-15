@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Awaiting next milestone
-stopped_at: Phase 6 context gathered
+stopped_at: v1.0 milestone completed and archived
 last_updated: "2026-06-15T11:31:01.310Z"
 last_activity: 2026-06-15 — Milestone v1.0 completed and archived
 progress:
@@ -18,10 +18,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-13)
+See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** A complete non-programmer can write real algorithmic logic without fighting syntax, and never sees a Python stack trace — only plain-English errors that name the line and show the offending code.
-**Current focus:** Milestone complete
+**Current focus:** v1.0 shipped & archived — planning next milestone (`/gsd-new-milestone`)
 
 ## Current Position
 
