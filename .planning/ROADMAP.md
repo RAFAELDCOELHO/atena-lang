@@ -221,7 +221,14 @@ Plans:
   2. `examples/` contains a concept-ladder of `.atena` programs (I/O → variables → conditionals → loops → functions → lists → dicts), each of which runs to completion via `atena run`, including the golden `school.atena`.
   3. A getting-started README explains installation, `atena run` / `atena build`, and the language basics, and following it end-to-end gets a new user from install to running their first program.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1** *(all three plans run in parallel — zero file overlap)*
+
+- [ ] 06-01-PLAN.md — PKG-01: pyproject.toml metadata polish (version 1.0.0, readme, license, authors, classifiers) + repo-install verification
+- [ ] 06-02-PLAN.md — DOCS-01: 9-rung concept-ladder examples (01-show through 09-dicts) + tests/test_examples.py execution tests
+- [ ] 06-03-PLAN.md — DOCS-02: Full getting-started README rewrite (hook, install, first-program walkthrough, verbs, error showcase, cheatsheet, examples pointer, for-teachers section)
 
 ## Progress
 
@@ -236,4 +243,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6
 | 3. Semantic Analyzer | 3/3 | Complete   | 2026-06-14 |
 | 4. Code Generator | 5/5 | Complete   | 2026-06-14 |
 | 5. CLI Runtime & Pipeline Integration | 4/4 | Complete   | 2026-06-14 |
-| 6. Packaging & Curriculum | 0/TBD | Not started | - |
+| 6. Packaging & Curriculum | 0/3 | Not started | - |
