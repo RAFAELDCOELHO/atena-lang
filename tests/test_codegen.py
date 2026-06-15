@@ -119,6 +119,20 @@ def test_G1_list_add_generates_append():
     assert ".append(5)" in result
 
 
+def test_G1_division_is_floor_division():
+    """'show 10 / 3' → generated Python uses floor division '//' (integers only).
+
+    Atena v1.0 is integers-only (PROJECT.md). Mapping '/' to Python true
+    division would leak floats into a beginner curriculum, so codegen must
+    emit '//' for the division operator.
+    """
+    result = _generate("show 10 / 3\n")
+    assert "10 // 3" in result, f"Expected floor division '//'. Got:\n{result}"
+    assert "10 / 3" not in result.replace("10 // 3", ""), (
+        f"Division must not emit true division '/'. Got:\n{result}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Layer 2 — Execution tests (G2_*)
 # ---------------------------------------------------------------------------
@@ -148,6 +162,25 @@ def test_G2_arithmetic_executes():
     )
     assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
     assert result.stdout.strip() == "14"
+
+
+def test_G2_division_executes_to_integer():
+    """'show 10 / 3' → generated Python executes and prints '3' (no float).
+
+    Floor division keeps the integers-only contract: a learner never sees
+    a 17-digit float like 3.3333333333333335 on a basic arithmetic example.
+    """
+    python_src = _generate("show 10 / 3\n")
+    result = subprocess.run(
+        [sys.executable, "-c", python_src],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, f"Generated Python crashed:\n{result.stderr}"
+    assert result.stdout.strip() == "3", (
+        f"Expected integer '3' from 10 / 3. Got: {result.stdout!r}"
+    )
 
 
 def test_G1_golden_school_roundtrip():
