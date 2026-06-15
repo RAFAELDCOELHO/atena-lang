@@ -1,0 +1,12 @@
+# Concept: if / else (conditionals)
+# Use if and else to make decisions in your program.
+# Run it with: atena run 04-conditionals.atena
+
+# A student's score
+score = 7
+
+# Check if the score is passing (6 or above)
+if score >= 6
+    show "Passing"
+else
+    show "Not yet"

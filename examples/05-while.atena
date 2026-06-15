@@ -1,0 +1,12 @@
+# Concept: while loop
+# while repeats a block as long as a condition is true.
+# Run it with: atena run 05-while.atena
+
+# Count from 1 to 5 using a while loop
+counter = 1
+
+while counter <= 5
+    show "Count: " + counter
+    counter = counter + 1
+
+show "Done counting!"

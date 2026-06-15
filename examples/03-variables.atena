@@ -1,0 +1,19 @@
+# Concept: variables and arithmetic
+# Variables store values. You can do math and show the results.
+# Run it with: atena run 03-variables.atena
+
+# Assign two numbers to variables
+a = 10
+b = 3
+
+# Add them together
+show "Sum: " + (a + b)
+
+# Subtract
+show "Difference: " + (a - b)
+
+# Multiply
+show "Product: " + (a * b)
+
+# Divide (integers only in Atena v1.0)
+show "Quotient: " + (a / b)

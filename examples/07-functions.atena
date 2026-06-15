@@ -1,0 +1,14 @@
+# Concept: functions and return
+# A function groups steps under a name so you can reuse them.
+# Run it with: atena run 07-functions.atena
+
+# Define a function that doubles a number
+function double(n)
+    return n * 2
+
+# Call the function and show the result
+result = double(5)
+show "Double of 5 is: " + result
+
+# Call it again with a different value
+show "Double of 12 is: " + double(12)

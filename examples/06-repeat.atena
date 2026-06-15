@@ -1,0 +1,9 @@
+# Concept: repeat N times
+# repeat runs a block an exact number of times — no condition needed.
+# Run it with: atena run 06-repeat.atena
+
+# Show a message exactly 3 times
+repeat 3 times
+    show "Atena is fun!"
+
+show "All done."

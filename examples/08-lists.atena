@@ -1,0 +1,19 @@
+# Concept: lists (1-indexed)
+# A list holds multiple values in order. Lists in Atena start at 1, not 0.
+# Run it with: atena run 08-lists.atena
+
+# Create a list of three grades
+grades = [8, 6, 9]
+
+# Lists in Atena start at 1, not 0.
+# grades[1] is the first item, grades[2] is the second.
+show "First grade: " + grades[1]
+show "Second grade: " + grades[2]
+
+# Add a new grade to the end of the list
+add 10 to grades
+show "After adding a grade, count: " + length(grades)
+
+# Remove the added grade
+remove 10 from grades
+show "After removing the extra grade, count: " + length(grades)

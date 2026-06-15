@@ -1,0 +1,9 @@
+# Concept: ask (input)
+# ask pauses the program and waits for the learner to type something.
+# Run it with: atena run 02-ask.atena
+
+# Ask for the learner's name and store it in a variable
+name = ask "What is your name? "
+
+# Show the name back — ask always gives you text, so concatenation works directly
+show "Hello, " + name

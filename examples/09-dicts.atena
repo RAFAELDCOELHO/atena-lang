@@ -1,0 +1,13 @@
+# Concept: dicts (dictionaries)
+# A dict stores named values. Read and write fields using dot notation.
+# Run it with: atena run 09-dicts.atena
+
+# Create a dict with two fields
+person = {name = "Ana", age = 20}
+
+# Read a value using dot notation
+show person.name
+
+# Update a value using dot notation
+person.age = 21
+show "Updated age: " + person.age

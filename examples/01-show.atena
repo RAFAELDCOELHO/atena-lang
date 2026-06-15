@@ -1,0 +1,12 @@
+# Concept: show (output)
+# This file shows how to print text and numbers to the screen.
+# Run it with: atena run 01-show.atena
+
+# Show a simple greeting
+show "Hello, world!"
+
+# You can also show numbers directly
+show 42
+
+# You can show text and numbers together — Atena handles the conversion
+show "The answer is: " + 42
