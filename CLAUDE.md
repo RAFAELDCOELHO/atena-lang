@@ -135,6 +135,10 @@ Atena v1.0 is a teaching programming language that transpiles to runnable Python
 Conventions not yet established. Will populate as patterns emerge during development.
 <!-- GSD:conventions-end -->
 
+## Git conventions
+
+Do not add Co-Authored-By trailers to git commits.
+
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
 ## Architecture
 
