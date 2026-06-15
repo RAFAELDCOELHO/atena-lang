@@ -21,7 +21,13 @@ findings:
   warning: 4
   info: 3
   total: 8
-status: issues_found
+status: resolved
+resolved: 2026-06-15
+resolution_commits:
+  - 0697ebe  # RED: floor-division tests
+  - d928963  # fix: / -> ast.FloorDiv (CR-01)
+  - 8643195  # strengthen example assertions (WR-02, WR-03)
+  - ec51b2a  # README error message + integer-division note (WR-01, CR-01)
 ---
 
 # Phase 6: Code Review Report
@@ -29,7 +35,17 @@ status: issues_found
 **Reviewed:** 2026-06-15
 **Depth:** standard
 **Files Reviewed:** 12
-**Status:** issues_found
+**Status:** resolved (was: issues_found)
+
+## Resolution (2026-06-15)
+
+User decision: **fix the transpiler with floor division** (uphold the integers-only contract).
+
+- **CR-01 (Critical) — RESOLVED.** `src/atena/codegen.py` now maps `/` to `ast.FloorDiv()`, so division always yields a whole number (`10 / 3` → `3`). Added RED tests `test_G1_division_is_floor_division` / `test_G2_division_executes_to_integer` and updated the `school.expected.py` golden snapshot (`total / 4` → `total // 4`). Full suite: 298 passing.
+- **WR-01 (Warning) — RESOLVED.** README undefined-variable error now matches real CLI output verbatim (`...is yet. Did you forget to create it first?`), asserted by a string-equality check.
+- **WR-02 / WR-03 (Warning) — RESOLVED.** `test_example_03_variables_*` and `test_example_school_atena_capstone` now assert exact integer outputs (`Quotient: 3`, `average is: 7`) and explicitly reject floats — a regression to true division can no longer pass green.
+- **WR-04 (Warning) — ACKNOWLEDGED (no change).** `Production/Stable` classifiers and the per-version list were a deliberate planning decision (D-10); a multi-version CI matrix (tox/nox) is documented as "optional, late" in CLAUDE.md and is out of this phase's scope.
+- **IN-01/02/03 (Info) — ACKNOWLEDGED (no change).** README list snippet is illustrative and internally consistent; no division *output* is printed in the README; `-v` in `addopts` was specified by the plan.
 
 ## Summary
 
