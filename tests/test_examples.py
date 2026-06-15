@@ -48,13 +48,17 @@ def test_example_01_show_runs_to_completion() -> None:
 
 
 def test_example_03_variables_runs_to_completion() -> None:
-    """03-variables.atena exits 0 and shows arithmetic results."""
+    """03-variables.atena exits 0 and shows integer arithmetic (no floats)."""
     result = run_cli("run", "examples/03-variables.atena")
     assert result.returncode == 0, (
         f"Expected exit 0. stderr: {result.stderr!r}"
     )
-    assert result.stdout.strip() != "", (
-        f"Expected some output. Got: {result.stdout!r}"
+    # Integers-only contract: 10 / 3 floor-divides to 3, never a float.
+    assert "Quotient: 3" in result.stdout, (
+        f"Expected integer quotient 'Quotient: 3'. Got: {result.stdout!r}"
+    )
+    assert "3.3" not in result.stdout, (
+        f"Division must not produce a float. Got: {result.stdout!r}"
     )
     assert "Traceback" not in result.stdout + result.stderr
 
@@ -170,5 +174,12 @@ def test_example_school_atena_capstone() -> None:
     )
     assert "Welcome, Ana" in result.stdout, (
         f"Expected 'Welcome, Ana' in stdout. Got: {result.stdout!r}"
+    )
+    # Integers-only: average is floor division (30 // 4 == 7), never 7.5.
+    assert "Your average is: 7" in result.stdout, (
+        f"Expected integer average 'Your average is: 7'. Got: {result.stdout!r}"
+    )
+    assert "7.5" not in result.stdout, (
+        f"Average must be an integer, not a float. Got: {result.stdout!r}"
     )
     assert "Traceback" not in result.stdout + result.stderr
