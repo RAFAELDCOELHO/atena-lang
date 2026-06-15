@@ -105,7 +105,9 @@ _ARITH_OPS: dict[str, ast.operator] = {
     "+": ast.Add(),
     "-": ast.Sub(),
     "*": ast.Mult(),
-    "/": ast.Div(),
+    # Atena v1.0 is integers-only (PROJECT.md): map '/' to floor division so
+    # division always yields a whole number (10 / 3 → 3), never a float.
+    "/": ast.FloorDiv(),
 }
 
 _CMP_OPS: dict[str, ast.cmpop] = {

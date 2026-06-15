@@ -27,7 +27,7 @@ def is_passing(score):
         return "fail"
 print(make_greeting(name))
 total = g1 + g2 + g3 + g4
-avg = total / 4
+avg = total // 4
 verdict = is_passing(avg)
 print("Your average is: " + str(avg))
 print(_atena_concat("Result: ", verdict))
