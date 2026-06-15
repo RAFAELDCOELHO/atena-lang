@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: milestone_complete
-stopped_at: Milestone complete (Phase 06 was final phase)
-last_updated: 2026-06-15T11:16:14.949Z
-last_activity: 2026-06-15
+status: Awaiting next milestone
+stopped_at: Phase 6 context gathered
+last_updated: "2026-06-15T11:31:01.310Z"
+last_activity: 2026-06-15 — Milestone v1.0 completed and archived
 progress:
   total_phases: 7
   completed_phases: 7
@@ -25,12 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 ## Current Position
 
-Phase: 06
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-06-15
-
-Progress: [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-15 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -165,3 +163,7 @@ Planned fix for v1.1: typed parameter syntax, e.g. `function add(a: number, b: n
 Last session: 2026-06-15T10:52:51.804Z
 Stopped at: Phase 6 context gathered
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

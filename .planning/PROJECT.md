@@ -51,6 +51,7 @@ A complete non-programmer can write real algorithmic logic (functions, control f
 - **1-indexing:** `items[1]` is the first element and transpiles to `items[0]`. `items[0]` is a deliberate error ("Lists in Atena start at 1, not 0"). The analyzer owns the 1→0 rewrite.
 - **Silent type coercion:** `string + number` and `string + boolean` auto-wrap the non-string side in `str()` so mixed-type concatenation never crashes. `number + number` and `string + string` are untouched. Other combinations are a plain-English error.
 - **Golden example:** The spec's complete test script (`school.atena`-style) and its expected Python output form the canonical end-to-end integration fixture.
+- **Current state (v1.0 shipped, 2026-06-15):** All 7 phases complete and milestone-audited (42/42 requirements, integration GREEN, 298 tests). ~3,500 LOC Python (stdlib only), ~5,200 LOC tests, pip-installable `atena` CLI, 9-rung `examples/` ladder + getting-started README. One cosmetic tech-debt item carried to backlog (blank-line formatting in `build` output).
 
 ## Constraints
 
@@ -65,12 +66,12 @@ A complete non-programmer can write real algorithmic logic (functions, control f
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Collect all errors (error recovery) over fail-fast | Friendlier for non-programmers — surface every problem in one run instead of one-at-a-time; each phase gathers what it can, codegen runs only when zero errors remain | — Pending |
-| `atena run` executes, `atena build` emits `.py` | Learners can run immediately (`run`) or inspect the generated Python (`build`) to connect Atena to real code | — Pending |
-| Ship packaging + docs + teaching curriculum, not just the transpiler | The product is a learning tool; a correct compiler nobody can install or learn from doesn't deliver the core value | — Pending |
-| 1-indexed lists, `[0]` is an error | Matches the human mental model of "first, second, third"; the deliberate `[0]` error teaches the convention | — Pending |
-| Silent string coercion via `str()` injection | Mixed-type concatenation should never crash a beginner's program | — Pending |
-| Four sequential phases, one at a time, TDD-gated | Each phase has a clean contract (tokens → AST → analyzed AST → Python); 100%-green gate prevents compounding bugs downstream | — Pending |
+| Collect all errors (error recovery) over fail-fast | Friendlier for non-programmers — surface every problem in one run instead of one-at-a-time; each phase gathers what it can, codegen runs only when zero errors remain | ✓ Shipped v1.0 |
+| `atena run` executes, `atena build` emits `.py` | Learners can run immediately (`run`) or inspect the generated Python (`build`) to connect Atena to real code | ✓ Shipped v1.0 |
+| Ship packaging + docs + teaching curriculum, not just the transpiler | The product is a learning tool; a correct compiler nobody can install or learn from doesn't deliver the core value | ✓ Shipped v1.0 |
+| 1-indexed lists, `[0]` is an error | Matches the human mental model of "first, second, third"; the deliberate `[0]` error teaches the convention | ✓ Shipped v1.0 |
+| Silent string coercion via `str()` injection | Mixed-type concatenation should never crash a beginner's program | ✓ Shipped v1.0 |
+| Four sequential phases, one at a time, TDD-gated | Each phase has a clean contract (tokens → AST → analyzed AST → Python); 100%-green gate prevents compounding bugs downstream | ✓ Shipped v1.0 |
 | `/` is floor division, not true division | Atena v1.0 is integers-only; mapping `/` to Python `ast.FloorDiv()` keeps division whole-number (`10 / 3 → 3`) so a beginner never sees a 17-digit float | ✓ Phase 6 (CR-01) |
 
 ## Evolution
