@@ -70,7 +70,7 @@ The analyzer owns every semantic decision; the generator emits verbatim.
 
 ### Packaging
 
-- [ ] **PKG-01**: The project is pip-installable and exposes an `atena` console entry point (`pyproject.toml`, `src/` layout)
+- [x] **PKG-01**: The project is pip-installable and exposes an `atena` console entry point (`pyproject.toml`, `src/` layout)
 
 ### Curriculum & Docs
 
@@ -157,7 +157,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CLI-04 | Phase 5 | Complete |
 | CLI-05 | Phase 5 | Complete |
 | CLI-06 | Phase 5 | Complete |
-| PKG-01 | Phase 6 | Pending |
+| PKG-01 | Phase 6 | Complete |
 | DOCS-01 | Phase 6 | Pending |
 | DOCS-02 | Phase 6 | Pending |
 
